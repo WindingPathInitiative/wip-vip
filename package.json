@@ -1,0 +1,36 @@
+{
+  "name": "mes-prestige",
+  "version": "1.0.0",
+  "description": "System to handle prestige for Mind's Eye Society",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MindsEyeSociety/prestige.git"
+  },
+  "author": "Ephraim Gregor",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/MindsEyeSociety/prestige/issues"
+  },
+  "homepage": "https://github.com/MindsEyeSociety/prestige#readme",
+  "dependencies": {
+    "bluebird": "^3.4.7",
+    "bookshelf": "^0.10.3",
+    "knex": "^0.12.7",
+    "lodash": "^4.17.4",
+    "mysql": "^2.13.0",
+    "request": "^2.79.0"
+  },
+  "devDependencies": {
+    "eslint": "^3.16.1",
+    "eslint-config-wordpress": "^1.1.0",
+    "mocha": "^3.2.0",
+    "nsp": "^2.6.2",
+    "pretty-error": "^2.0.2",
+    "should": "^11.2.0",
+    "sqlite": "^2.3.0"
+  }
+}
