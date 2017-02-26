@@ -1,3 +1,5 @@
+'use strict';
+
 const Bookshelf = require( '../helpers/db' ).Bookshelf;
 
 class Category extends Bookshelf.Model {

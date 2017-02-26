@@ -1,3 +1,5 @@
+'use strict';
+
 const Bookshelf = require( '../helpers/db' ).Bookshelf;
 
 const Category = require( './category' );

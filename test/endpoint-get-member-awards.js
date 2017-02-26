@@ -1,3 +1,5 @@
+'use strict';
+
 /* eslint-env node, mocha */
 
 const should  = require( 'should' ); // eslint-disable-line no-unused-vars
@@ -11,7 +13,7 @@ module.exports = function() {
 		let instance = new GetMemberAwards( Award, hub );
 		instance.should.be.an.instanceOf( GetMemberAwards );
 		instance.should.have.properties({
-			Awards: Award,
+			Award: Award,
 			Hub: hub
 		});
 	});

@@ -1,3 +1,5 @@
+'use strict';
+
 const config = require( '../knexfile' );
 
 let env = process.env.NODE_ENV || 'development';

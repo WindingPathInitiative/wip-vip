@@ -1,16 +1,28 @@
 'use strict';
 
-module.exports.hello = (event, context, callback) => {
-  const response = {
-    statusCode: 200,
-    body: JSON.stringify({
-      message: 'Go Serverless v1.0! Your function executed successfully!',
-      input: event,
-    }),
-  };
+const Promise = require( 'bluebird' );
 
-  callback(null, response);
+module.exports.getMemberAwards = ( event, context, callback ) => {
 
-  // Use this code if you don't use the http event with the LAMBDA-PROXY integration
-  // callback(null, { message: 'Go Serverless v1.0! Your function executed successfully!', event });
+	let Award = require( './models/award' );
+	let GetMemberAwards = require( './endpoints/get-member-awards' );
+
+	new GetMemberAwards( Award, hub( event.authorizationToken ) );
+
+	callback( null, res( { message: 'Success' } ) );
 };
+
+function hub( token ) {
+	let Hub    = require( './helpers/hub' );
+	let baseUrl = require( './helpers/config' ).hubUrl;
+	let request = Promise.promisify( require( 'request' ) );
+
+	return new Hub( baseUrl, token, request );
+}
+
+function res( body, status ) {
+	return {
+		statusCode: status || 200,
+		body: JSON.stringify( body )
+	}
+}

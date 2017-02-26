@@ -1,6 +1,8 @@
+'use strict';
+
 class GetMemberAwards {
 	constructor( awards, hub ) {
-		this.Awards = awards;
+		this.Award = awards;
 		this.Hub = hub;
 		return this;
 	}
@@ -15,7 +17,7 @@ class GetMemberAwards {
 			if ( ! approved ) {
 				throw new Error();
 			}
-			return this.Awards.where({
+			return this.Award.where({
 				user: user,
 				status: status
 			}).fetchAll({
