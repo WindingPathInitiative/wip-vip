@@ -28,10 +28,46 @@ class Hub {
 	}
 
 	hasOverUser( user, roles ) {
-		roles = roles || [];
+		roles = roles || '';
+		if ( _.isArray( roles ) ) {
+			roles = roles.join( ',' );
+		}
 		return this.request( `/v1/office/verify/user/${user}`, { roles: roles } )
-		.then( () => true )
-		.catch( () => false );
+		.then( () => true );
+	}
+
+	/**
+	 * Express middleware.
+	 * @param {Object}   req Request object.
+	 * @param {Object}   res Response object.
+	 * @param {Function} next Callback.
+	 */
+	static route( req, res, next ) {
+		let baseUrl = require( '../helpers/config' ).hubUrl;
+		let Promise = require( 'bluebird' );
+		let request = Promise.promisify( require( 'request' ) );
+
+		if ( 'authorization' in req.headers ) {
+			req.query.token = req.headers.authorization.toLowerCase().replace( 'bearer ', '' );
+		}
+		let token = req.query.token;
+
+		if ( ! token ) {
+			return next( new AuthError( 'No token provided' ) );
+		}
+
+		req.hub = new Hub( baseUrl, token, request );
+		if ( 'auth-user' in req.headers ) {
+			req.user = Number.parseInt( req.headers['auth-user'] );
+			return next();
+		} else {
+			return req.hub.request( '/v1/user/me' )
+			.then( user => {
+				req.user = Number.parseInt( user.id );
+				return next();
+			})
+			.catch( err => next( err ) );
+		}
 	}
 }
 

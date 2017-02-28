@@ -2,10 +2,10 @@
   "name": "mes-prestige",
   "version": "1.0.0",
   "description": "System to handle prestige for Mind's Eye Society",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
     "lint": "eslint .",
-    "start": "",
+    "start": "node .",
     "posttest": "npm run lint && nsp check",
     "test": "mocha"
   },
@@ -28,9 +28,12 @@
     "request": "^2.79.0"
   },
   "devDependencies": {
+    "body-parser": "^1.16.1",
     "eslint": "^3.16.1",
     "eslint-config-wordpress": "^1.1.0",
+    "express": "^4.14.1",
     "mocha": "^3.2.0",
+    "morgan": "^1.8.1",
     "nsp": "^2.6.2",
     "pretty-error": "^2.0.2",
     "should": "^11.2.0",

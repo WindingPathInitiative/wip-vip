@@ -39,7 +39,7 @@ module.exports = function() {
 		});
 
 		it( 'returns false on failure', function() {
-			hub( 403 ).hasOverUser( 1 ).should.be.a.Promise().and.is.fulfilledWith( false );
+			hub( 403 ).hasOverUser( 1 ).should.be.a.Promise().and.is.rejected();
 		});
 	});
 }

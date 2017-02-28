@@ -8,7 +8,7 @@ module.exports = {
 			password: 'root',
 			database: 'prestige'
 		},
-		debug: [ 'ComQueryPacket' ]
+		debug: true
 	},
 
 	testing: {
