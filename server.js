@@ -7,7 +7,15 @@ app.use( bodyParser.json() );
 app.use( bodyParser.urlencoded({ extended: false }) );
 app.use( require( 'morgan' )( 'dev' ) );
 
-require( './endpoints/awards' ).route( app );
+app.use( '/v1/awards/', require( './endpoints/awards' ).route() );
+
+app.get( '/', ( req, res ) => {
+	let version = require( './package.json' ).version;
+	res.json({
+		message: 'Welcome to the prestige system!',
+		version
+	});
+});
 
 app.use( ( req, res, next ) => {
 	var err = new Error( 'Not Found' );

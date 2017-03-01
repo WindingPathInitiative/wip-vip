@@ -174,31 +174,51 @@ class AwardsEndpoint {
 	 * @return {Promise}
 	 */
 	validateAward( data ) {
-		let required = [ 'user', 'category', 'date' ];
-		let missing = _.difference( required, _.keys( data ) );
-		if ( missing.length ) {
-			let err = new RequestError( 'Missing required fields: ' + missing.join( ', ' ) );
-			return Promise.reject( err );
-		}
+		const validate = require( '../helpers/validation' );
 
-		let date = Date.parse( data.date );
-		if ( NaN === date ) {
-			return Promise.reject( 'Invalid date' );
-		}
-
-		let valid = _.pick( data, [ 'description', 'source' ] );
-		valid.date = date;
-
-		let numbers = [ 'general', 'regional', 'national', 'usableGeneral', 'usableRegional', 'usableNational', 'vip' ];
+		let constraints = {
+			user: { presence: true, numericality: { onlyInteger: true } },
+			category: { presence: true, numericality: { onlyInteger: true } },
+			date: { presence: true, date: true },
+		};
+		let numbers = [ 'general', 'regional', 'national'  ];
 		numbers.forEach( number => {
-			valid[ number ] = Number.parseInt( data[ number ] );
+			constraints[ number ] = { numericality: { onlyInteger: true } };
+			constraints[ 'usable' + _.capitalize( number ) ] = {
+				numericality: { onlyInteger: true }
+			};
 		});
 
+		let errors = validate( data, constraints );
+		if ( errors ) {
+			errors = validate.format( errors );
+			return Promise.reject( new RequestError( `Errors found: ${errors}` ) );
+		}
+
+		data = validate.cleanAttributes( data, constraints );
+
 		return new CategoryModel({ id: data.category })
+		.where( 'start', '<', data.date )
+		.query( qb => {
+			qb.where( function() {
+				this.where( 'end', '>=', data.date ).orWhereNull( 'end' );
+			});
+		})
 		.fetch({ required: true })
 		.then( category => {
-			valid.categoryId = category.id;
-			return valid;
+			category = category.toJSON();
+			data.categoryId = category.id;
+			delete data.category;
+
+			numbers.forEach( number => {
+				let key = 'usable' + _.capitalize( number );
+				if ( data[ number ] && data[ number ] > category.entryLimit ) {
+					let cur = data[ key ] || 10000;
+					data[ key ] = Math.min( category.entryLimit, cur );
+				}
+			});
+
+			return data;
 		})
 		.catch( () => {
 			throw new RequestError( 'Invalid category ID' );
@@ -208,9 +228,22 @@ class AwardsEndpoint {
 	/**
 	 * Express routing helper.
 	 */
-	static route( app ) {
-		app.get( '/v1/awards/member/:user',
-			require( '../helpers/hub' ).route,
+	static route() {
+		let router = require( 'express' ).Router();
+		let hub    = require( '../helpers/hub' ).route;
+
+		router.get( '/',
+			hub,
+			( req, res, next ) => {
+				return new AwardsEndpoint( req.hub, req.user )
+				.get( req.query )
+				.then( awards => res.json({ results: awards }) )
+				.catch( err => next( err ) );
+			}
+		);
+
+		router.get( '/member/:user',
+			hub,
 			( req, res, next ) => {
 				return new AwardsEndpoint( req.hub, req.user )
 				.getMember( req.params.user, req.query )
@@ -218,6 +251,18 @@ class AwardsEndpoint {
 				.catch( err => next( err ) );
 			}
 		);
+
+		router.post( '/',
+			hub,
+			( req, res, next ) => {
+				return new AwardsEndpoint( req.hub, req.user )
+				.create( req.body )
+				.then( award => res.json( award ) )
+				.catch( err => next( err ) );
+			}
+		);
+
+		return router;
 	}
 }
 
