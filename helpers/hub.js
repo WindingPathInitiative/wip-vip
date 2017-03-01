@@ -28,12 +28,22 @@ class Hub {
 	}
 
 	hasOverUser( user, roles ) {
+		return this.request( `/v1/office/verify/user/${user}`, { roles: this.roles( roles ) } )
+		.then( () => true );
+	}
+
+	hasOverOrgUnit( org, roles ) {
+		return this.request( `/v1/office/verify/orgunit/${org}`, { roles: this.roles( roles ) } )
+		.then( () => true );
+	}
+
+
+	roles( roles ) {
 		roles = roles || '';
 		if ( _.isArray( roles ) ) {
 			roles = roles.join( ',' );
 		}
-		return this.request( `/v1/office/verify/user/${user}`, { roles: roles } )
-		.then( () => true );
+		return roles;
 	}
 
 	/**

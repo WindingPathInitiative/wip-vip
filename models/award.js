@@ -4,7 +4,7 @@ const Bookshelf = require( '../helpers/db' ).Bookshelf;
 
 const Category = require( './category' );
 
-class Award extends Bookshelf.Model {
+class AwardModel extends Bookshelf.Model {
 	get tableName() {
 		return 'awards';
 	}
@@ -30,4 +30,4 @@ class Award extends Bookshelf.Model {
 	}
 }
 
-module.exports = Bookshelf.model( 'Award', Award );
+module.exports = Bookshelf.model( 'Award', AwardModel );

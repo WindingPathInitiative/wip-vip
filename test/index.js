@@ -10,4 +10,4 @@ before( 'create db', function( done ) {
 
 describe( 'User Hub', require( './helper-hub' ) );
 
-describe( 'GetMemberAwards', require( './endpoint-get-member-awards' ) );
+describe( 'Awards', require( './endpoint-awards' ) );

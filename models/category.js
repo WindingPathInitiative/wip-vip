@@ -2,7 +2,7 @@
 
 const Bookshelf = require( '../helpers/db' ).Bookshelf;
 
-class Category extends Bookshelf.Model {
+class CategoryModel extends Bookshelf.Model {
 	get tableName() {
 		return 'categories';
 	}
@@ -16,4 +16,4 @@ class Category extends Bookshelf.Model {
 	}
 }
 
-module.exports = Bookshelf.model( 'Category', Category );
+module.exports = Bookshelf.model( 'Category', CategoryModel );

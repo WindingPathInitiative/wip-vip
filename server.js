@@ -7,7 +7,7 @@ app.use( bodyParser.json() );
 app.use( bodyParser.urlencoded({ extended: false }) );
 app.use( require( 'morgan' )( 'dev' ) );
 
-require( './endpoints/get-member-awards' ).route( app );
+require( './endpoints/awards' ).route( app );
 
 app.use( ( req, res, next ) => {
 	var err = new Error( 'Not Found' );
