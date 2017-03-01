@@ -1,3 +1,5 @@
+'use strict';
+
 /* eslint-env node, mocha */
 
 before( 'create db', function( done ) {

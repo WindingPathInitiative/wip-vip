@@ -1,3 +1,5 @@
+'use strict';
+
 const Hub = require( '../helpers/hub' );
 
 function getHub( status, body ) {
