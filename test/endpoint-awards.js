@@ -2,7 +2,8 @@
 
 /* eslint-env node, mocha */
 
-const should  = require( 'should' ); // eslint-disable-line no-unused-vars
+const should = require( 'should' ); // eslint-disable-line no-unused-vars
+const _      = require( 'lodash' );
 
 const hub = require( './helpers' ).hub;
 const AwardsEndpoint = require( '../endpoints/awards' );
@@ -164,6 +165,39 @@ module.exports = function() {
 				done();
 			});
 		});
+	});
+
+	describe( 'POST /v1/awards', function() {
+
+		beforeEach( 'reset data', function( done ) {
+			let knex = require( '../helpers/db' );
+			knex.seed.run().then( () => done() );
+		});
+
+		let data = {
+			user: 2,
+			category: 1,
+			date: '2017-01-01'
+		};
+
+		Object.keys( data ).forEach( key => {
+			it( `fails without providing ${key}`, function() {
+				new AwardsEndpoint( null, 1 ).create( _.omit( data, key ) )
+				.should.be.rejectedWith({ status: 400 });
+			})
+		});
+
+		it( 'fails if negative prestige set without deduct action', function() {
+			new AwardsEndpoint( null, 1 ).create( _.assign( {}, data, { general: -10 } ) )
+			.should.be.rejectedWith({ status: 400 });
+		});
+
+		// it( 'fails if saving with no prestige', function() {
+		// 	new AwardsEndpoint( null, 1 ).create( data )
+		// 	.should.be.rejectedWith({ status: 400, message: 'No prestige awarded' });
+		// });
+
+		it( 'sets action to request for self' );
 	});
 }
 

@@ -18,6 +18,7 @@ class AwardsEndpoint {
 	constructor( hub, user ) {
 		this.Hub    = hub;
 		this.userId = user;
+		this.levels = [ 'general', 'regional', 'national'  ];
 		return this;
 	}
 
@@ -86,7 +87,16 @@ class AwardsEndpoint {
 	 * @return {Promise}
 	 */
 	create( data ) {
-		return this.validateAward( data );
+		return this.validateAward( data )
+		.tap( data => {
+			if ( 'request' === data.action ) {
+				return;
+			}
+			return this.Hub.hasOverUser( data.user, `prestige_${data.action}` );
+		})
+		.then( data => _.omit( data, 'action' ) )
+		.then( data => new AwardModel( data ).save() )
+		.then( award => award.refresh() );
 	}
 
 
@@ -180,22 +190,49 @@ class AwardsEndpoint {
 			user: { presence: true, numericality: { onlyInteger: true } },
 			category: { presence: true, numericality: { onlyInteger: true } },
 			date: { presence: true, date: true },
+			action: { presence: true, inclusion: [ 'request', 'nominate', 'award', 'deduct' ] }
 		};
-		let numbers = [ 'general', 'regional', 'national'  ];
-		numbers.forEach( number => {
-			constraints[ number ] = { numericality: { onlyInteger: true } };
-			constraints[ 'usable' + _.capitalize( number ) ] = {
-				numericality: { onlyInteger: true }
-			};
+
+		let constaint = { numericality: { onlyInteger: true, greaterThanOrEqualTo: 0 } };
+		this.levels.forEach( level => {
+			constraints[ level ] = constaint;
+			if ( 'award' === data.action ) {
+				constraints[ 'usable' + _.capitalize( level ) ] = constaint;
+			}
 		});
 
+		// Force the type of action.
+		if ( Number.parseInt( data.user ) === this.userId ) {
+			data.action = 'request';
+		} else if ( ! data.action ) {
+			data.action = 'nominate';
+		}
+
+		if ( 'deduct' === data.action ) {
+			this.levels.forEach( level => {
+				delete constraints[ level ].numericality.greaterThanOrEqualTo;
+				constraints[ level ].numericality.lessThanOrEqualTo = 0;
+			});
+		}
+
+		// Validate and clean up.
 		let errors = validate( data, constraints );
 		if ( errors ) {
-			errors = validate.format( errors );
-			return Promise.reject( new RequestError( `Errors found: ${errors}` ) );
+			return Promise.reject( new RequestError( `Errors found: ${errors.join( ', ' )}` ) );
 		}
 
 		data = validate.cleanAttributes( data, constraints );
+
+		// Exit if no prestige is set.
+		let prestige = false
+		this.levels.forEach( level => {
+			if ( data[ level ] ) {
+				prestige = true;
+			}
+		});
+		if ( ! prestige ) {
+			throw new RequestError( 'No prestige awarded' );
+		}
 
 		return new CategoryModel({ id: data.category })
 		.where( 'start', '<', data.date )
@@ -205,23 +242,23 @@ class AwardsEndpoint {
 			});
 		})
 		.fetch({ required: true })
+		.catch( () => {
+			throw new RequestError( 'Invalid category ID' );
+		})
 		.then( category => {
 			category = category.toJSON();
 			data.categoryId = category.id;
 			delete data.category;
 
-			numbers.forEach( number => {
-				let key = 'usable' + _.capitalize( number );
-				if ( data[ number ] && data[ number ] > category.entryLimit ) {
-					let cur = data[ key ] || 10000;
+			this.levels.forEach( level => {
+				let key = 'usable' + _.capitalize( level );
+				if ( data[ level ] ) {
+					let cur = data[ key ] || data[ level ];
 					data[ key ] = Math.min( category.entryLimit, cur );
 				}
 			});
 
 			return data;
-		})
-		.catch( () => {
-			throw new RequestError( 'Invalid category ID' );
 		});
 	}
 

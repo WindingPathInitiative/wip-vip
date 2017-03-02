@@ -8,7 +8,7 @@ class CategoryModel extends Bookshelf.Model {
 	}
 
 	get hidden() {
-		return [ 'id', 'start', 'end' ];
+		return [ 'start', 'end', 'type' ];
 	}
 
 	awards() {

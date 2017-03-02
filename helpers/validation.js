@@ -6,6 +6,8 @@ const _        = require( 'lodash' );
 
 validate.Promise = Promise;
 
+validate.options = { format: 'flat' };
+
 let types = [ 'String', 'Array', 'Boolean', 'Object', 'Number' ];
 
 types.forEach( type => {
@@ -27,18 +29,6 @@ validate.extend( validate.validators.datetime, {
 });
 
 module.exports = validate;
-
-/**
- * Formats the errors.
- * @param {mixed} errs Array or string of error text.
- * @return {string}
- */
-module.exports.format = function( errs ) {
-	if ( 'string' === typeof errs ) {
-		return errs;
-	}
-	return _.map( errs, err => err.join( ', ' ) ).join( ', ' );
-};
 
 /**
  * Normalizes a boolean query value.
