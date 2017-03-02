@@ -92,11 +92,11 @@ class AwardsEndpoint {
 			if ( 'request' === data.action ) {
 				return;
 			}
-			return this.Hub.hasOverUser( data.user, `prestige_${data.action}` );
+			return this.Hub.hasOverUser( data.user, `prestige_${data.action}_${data.level}` );
 		})
-		.then( data => _.omit( data, 'action' ) )
+		.then( data => _.omit( data, [ 'action', 'level' ] ) )
 		.then( data => new AwardModel( data ).save() )
-		.then( award => award.refresh() );
+		.then( award => award.refresh({ withRelated: [ 'category' ] }) );
 	}
 
 
@@ -190,7 +190,9 @@ class AwardsEndpoint {
 			user: { presence: true, numericality: { onlyInteger: true } },
 			category: { presence: true, numericality: { onlyInteger: true } },
 			date: { presence: true, date: true },
-			action: { presence: true, inclusion: [ 'request', 'nominate', 'award', 'deduct' ] }
+			action: { presence: true, inclusion: [ 'request', 'nominate', 'award', 'deduct' ] },
+			description: { presence: true },
+			source: {}
 		};
 
 		let constaint = { numericality: { onlyInteger: true, greaterThanOrEqualTo: 0 } };
@@ -200,6 +202,11 @@ class AwardsEndpoint {
 				constraints[ 'usable' + _.capitalize( level ) ] = constaint;
 			}
 		});
+
+		// Sets the user for self.
+		if ( 'me' === data.user ) {
+			data.user = this.userId;
+		}
 
 		// Force the type of action.
 		if ( Number.parseInt( data.user ) === this.userId ) {
@@ -231,9 +238,19 @@ class AwardsEndpoint {
 			}
 		});
 		if ( ! prestige ) {
-			throw new RequestError( 'No prestige awarded' );
+			return Promise.reject( new RequestError( 'No prestige awarded' ) );
 		}
 
+		// Sets the correct status.
+		if ( 'request' === data.action ) {
+			data.status = 'Requested';
+		} else if ( 'nominate' === data.action ) {
+			data.status = 'Nominated';
+		} else {
+			data.status = 'Awarded';
+		}
+
+		// Checks if the category exists.
 		return new CategoryModel({ id: data.category })
 		.where( 'start', '<', data.date )
 		.query( qb => {
@@ -255,6 +272,7 @@ class AwardsEndpoint {
 				if ( data[ level ] ) {
 					let cur = data[ key ] || data[ level ];
 					data[ key ] = Math.min( category.entryLimit, cur );
+					data.level = level;
 				}
 			});
 

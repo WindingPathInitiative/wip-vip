@@ -177,14 +177,26 @@ module.exports = function() {
 		let data = {
 			user: 2,
 			category: 1,
-			date: '2017-01-01'
+			date: '2017-01-01',
+			description: 'Test Award'
 		};
 
 		Object.keys( data ).forEach( key => {
 			it( `fails without providing ${key}`, function() {
 				new AwardsEndpoint( null, 1 ).create( _.omit( data, key ) )
 				.should.be.rejectedWith({ status: 400 });
-			})
+			});
+		});
+
+		Object.keys( data ).forEach( key => {
+			if ( 'description' === key ) {
+				return;
+			}
+			it( `fails with malformed ${key}`, function() {
+				let badData = _.set( _.clone( data ), key, 'bad!' );
+				new AwardsEndpoint( null, 1 ).create( badData )
+				.should.be.rejectedWith({ status: 400 });
+			});
 		});
 
 		it( 'fails if negative prestige set without deduct action', function() {
@@ -192,12 +204,106 @@ module.exports = function() {
 			.should.be.rejectedWith({ status: 400 });
 		});
 
-		// it( 'fails if saving with no prestige', function() {
-		// 	new AwardsEndpoint( null, 1 ).create( data )
-		// 	.should.be.rejectedWith({ status: 400, message: 'No prestige awarded' });
-		// });
+		it( 'fails if saving with no prestige', function() {
+			new AwardsEndpoint( null, 1 ).create( data )
+			.should.be.rejectedWith({ status: 400, message: 'No prestige awarded' });
+		});
 
-		it( 'sets action to request for self' );
+		it( 'sets action to request for self', function( done ) {
+			let newData = Object.assign( {}, data, { user: 'me', general: 10 } );
+			new AwardsEndpoint( null, 1 ).create( newData )
+			.then( award => {
+				award = award.toJSON();
+				award.should.have.property( 'status', 'Requested' );
+				done();
+			});
+		});
+
+		it( 'sets the user ID for requesting self', function( done ) {
+			let newData = Object.assign( {}, data, { user: 'me', general: 10 } );
+			new AwardsEndpoint( null, 1 ).create( newData )
+			.then( award => {
+				award = award.toJSON();
+				award.should.have.property( 'user', 1 );
+				done();
+			});
+		});
+
+		it( 'does not check permission for self', function() {
+			let newData = Object.assign( {}, data, { general: 10 } );
+			new AwardsEndpoint( null, 2 ).create( newData )
+			.should.be.a.Promise();
+		});
+
+		let levels = [ 'general', 'regional', 'national' ];
+		levels.forEach( level => {
+			let newHub = hub();
+			newHub.hasOverUser = ( user, roles ) => {
+				roles.should.containEql( level ).and.containEql( newHub.action );
+				return Promise.resolve( true );
+			};
+
+			it( `verifies correct role for ${level} nominations`, function() {
+				let newData = Object.assign( {}, data );
+				newData[ level ] = 10;
+				newHub.action = 'nominate';
+				new AwardsEndpoint( newHub, 1 ).create( newData );
+			});
+
+			it( `verifies correct role for ${level} awards`, function() {
+				let newData = Object.assign( {}, data, { action: 'award' } );
+				newData[ level ] = 10;
+				newHub.action = newData.action;
+				new AwardsEndpoint( newHub, 1 ).create( newData );
+			});
+
+			it( `verifies correct role for ${level} deducts`, function() {
+				let newData = Object.assign( {}, data, { action: 'deduct' } );
+				newData[ level ] = -10;
+				newHub.action = newData.action;
+				new AwardsEndpoint( newHub, 1 ).create( newData );
+			});
+		});
+
+		it( 'sets the correct status for nominations', function( done ) {
+			let newData = Object.assign( {}, data, { general: 10 } );
+			new AwardsEndpoint( hub(), 1 ).create( newData )
+			.then( award => {
+				award = award.toJSON();
+				award.should.have.property( 'status', 'Nominated' );
+				done();
+			});
+		});
+
+		it( 'sets the correct status for awards', function( done ) {
+			let newData = Object.assign( {}, data, { action: 'award', general: 10 } );
+			new AwardsEndpoint( hub(), 1 ).create( newData )
+			.then( award => {
+				award = award.toJSON();
+				award.should.have.property( 'status', 'Awarded' );
+				done();
+			});
+		});
+
+		it( 'sets the correct status for reductions', function( done ) {
+			let newData = Object.assign( {}, data, { action: 'deduct', general: -10 } );
+			new AwardsEndpoint( hub(), 1 ).create( newData )
+			.then( award => {
+				award = award.toJSON();
+				award.should.have.property( 'status', 'Awarded' );
+				done();
+			});
+		});
+
+		it( 'returns the correct data', function( done ) {
+			let newData = Object.assign( {}, data, { general: 10 } );
+			new AwardsEndpoint( hub(), 1 ).create( newData )
+			.then( award => {
+				award = award.toJSON();
+				validateAward( award );
+				done();
+			});
+		});
 	});
 }
 
