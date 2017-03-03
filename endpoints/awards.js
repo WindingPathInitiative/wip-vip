@@ -107,7 +107,17 @@ class AwardsEndpoint {
 	 * @return {Promise}
 	 */
 	update( id, data ) {
-		return this.validateAward( data );
+		return this.validateAward( data )
+		.tap( data => {
+			data.id = id;
+			if ( 'request' === data.action ) {
+				return;
+			}
+			return this.Hub.hasOverUser( data.user, `prestige_${data.action}_${data.level}` );
+		})
+		.then( data => _.omit( data, [ 'action', 'level' ] ) )
+		.then( data => new AwardModel( data ).save() )
+		.then( award => award.refresh({ withRelated: [ 'category' ] }) );
 	}
 
 
@@ -316,6 +326,16 @@ class AwardsEndpoint {
 				.catch( err => next( err ) );
 			}
 		);
+
+		router.put( '/:id(\\d+)',
+			hub,
+			( req, res, next ) => {
+				return new AwardsEndpoint( req.hub, req.user )
+				.update( req.params.id, req.body )
+				.then( award => res.json( award ) )
+				.catch( err => next( err ) );
+			}
+		)
 
 		return router;
 	}
