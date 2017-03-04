@@ -14,6 +14,10 @@ class ActionModel extends Bookshelf.Model {
 	mc() {
 		return this.belongsTo( 'MC', 'mcId' );
 	}
+
+	static get jsonColumns() {
+		return [ 'previous' ];
+	}
 }
 
 module.exports = Bookshelf.model( 'Action', ActionModel );

@@ -8,12 +8,14 @@ exports.up = function( knex ) {
 		table.integer( 'user' ).index().notNullable();
 		table.string( 'description' );
 		table.string( 'source' );
-		table.integer( 'categoryId' ).index().notNullable();
+		table.integer( 'categoryId', 11 ).unsigned().index().notNullable()
+		.references( 'categories.id' ).onDelete( 'RESTRICT' ).onUpdate( 'CASCADE' );
 		table.date( 'date' ).index().notNullable();
 		table.timestamp( 'modified' ).defaultTo( knex.fn.now() ).notNullable();
 		table.integer( 'nominate' ).index();
 		table.integer( 'awarder' ).index();
-		table.integer( 'documentId' ).index();
+		table.integer( 'documentId', 11 ).unsigned().index()
+		.references( 'documents.id' ).onDelete( 'RESTRICT' ).onUpdate( 'CASCADE' );
 		table.integer( 'mcReviewId' ).index();
 		table.enum( 'status', [ 'Requested', 'Nominated', 'Awarded', 'Denied' ] ).index().notNullable().defaultTo( 'Requested' );
 		table.integer( 'general' ).defaultTo( 0 );

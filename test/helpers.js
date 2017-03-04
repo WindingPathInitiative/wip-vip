@@ -4,7 +4,7 @@ const Hub = require( '../helpers/hub' );
 
 function getHub( status, body ) {
 	if ( ! body ) {
-		body = { message: 'Success' };
+		body = { message: 'Success', offices: [{ id: 1 }] };
 	}
 
 	let req = params => Promise.resolve({

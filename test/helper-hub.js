@@ -36,12 +36,26 @@ module.exports = function() {
 	});
 
 	describe( 'hasOverUser', function() {
-		it( 'returns true on success', function() {
-			hub().hasOverUser( 1 ).should.be.a.Promise().and.is.fulfilledWith( true );
+		it( 'resolves office ID on success', function() {
+			hub().hasOverUser( 1 ).should.be.a.Promise()
+			.and.is.fulfilledWith( 1 );
 		});
 
-		it( 'returns false on failure', function() {
-			hub( 403 ).hasOverUser( 1 ).should.be.a.Promise().and.is.rejected();
+		it( 'rejects with an error on failure', function() {
+			hub( 403 ).hasOverUser( 1 ).should.be.a.Promise()
+			.and.is.rejectedWith( Error );
+		});
+	});
+
+	describe( 'hasOverOrgUnit', function() {
+		it( 'resolves office ID on success', function() {
+			hub().hasOverOrgUnit( 1 ).should.be.a.Promise()
+			.and.is.fulfilledWith( 1 );
+		});
+
+		it( 'rejects with an error on failure', function() {
+			hub( 403 ).hasOverOrgUnit( 1 ).should.be.a.Promise()
+			.and.is.rejectedWith( Error );
 		});
 	});
 }

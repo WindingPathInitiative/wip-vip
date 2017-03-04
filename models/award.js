@@ -2,7 +2,8 @@
 
 const Bookshelf = require( '../helpers/db' ).Bookshelf;
 
-const Category = require( './category' );
+const CategoryModel = require( './category' );
+const DocumentModel = require( './document' );
 
 class AwardModel extends Bookshelf.Model {
 	get tableName() {
@@ -14,7 +15,7 @@ class AwardModel extends Bookshelf.Model {
 	}
 
 	document() {
-		return this.belongsTo( 'Document', 'documentId' );
+		return this.belongsTo( DocumentModel, 'documentId' );
 	}
 
 	actions() {
@@ -26,7 +27,7 @@ class AwardModel extends Bookshelf.Model {
 	}
 
 	category() {
-		return this.belongsTo( Category, 'categoryId' );
+		return this.belongsTo( CategoryModel, 'categoryId' );
 	}
 }
 

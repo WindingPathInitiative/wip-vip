@@ -29,12 +29,12 @@ class Hub {
 
 	hasOverUser( user, roles ) {
 		return this.request( `/v1/office/verify/user/${user}`, { roles: this.roles( roles ) } )
-		.then( () => true );
+		.then( resp => _.get( resp, 'offices[0].id', 0 ) );
 	}
 
 	hasOverOrgUnit( org, roles ) {
 		return this.request( `/v1/office/verify/orgunit/${org}`, { roles: this.roles( roles ) } )
-		.then( () => true );
+		.then( resp => _.get( resp, 'offices[0].id', 0 ) );
 	}
 
 

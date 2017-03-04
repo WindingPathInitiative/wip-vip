@@ -13,4 +13,6 @@ Bookshelf.plugin( 'registry' );
 Bookshelf.plugin( 'pagination' );
 Bookshelf.plugin( 'visibility' );
 
+Bookshelf.plugin( require( 'bookshelf-json-columns' ) );
+
 module.exports.Bookshelf = Bookshelf;

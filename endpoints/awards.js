@@ -5,7 +5,10 @@ const Promise = require( 'bluebird' );
 
 const AwardModel    = require( '../models/award' );
 const CategoryModel = require( '../models/category' );
+const ActionModel   = require( '../models/action' );
+
 const RequestError  = require( '../helpers/errors' ).RequestError;
+const AuthError     = require( '../helpers/errors' ).AuthError;
 
 class AwardsEndpoint {
 
@@ -87,16 +90,30 @@ class AwardsEndpoint {
 	 * @return {Promise}
 	 */
 	create( data ) {
+		let officeId;
 		return this.validateAward( data )
 		.tap( data => {
 			if ( 'request' === data.action ) {
 				return;
 			}
-			return this.Hub.hasOverUser( data.user, `prestige_${data.action}_${data.level}` );
+			return this.Hub.hasOverUser( data.user, `prestige_${data.action}_${data.level}` )
+			.then( id => {
+				officeId = id;
+				if ( 'nominate' === data.action ) {
+					data.nominate = id;
+				} else {
+					data.awarder = id;
+				}
+			});
 		})
 		.then( data => _.omit( data, [ 'action', 'level' ] ) )
 		.then( data => new AwardModel( data ).save() )
-		.then( award => award.refresh({ withRelated: [ 'category' ] }) );
+		.then( award => award.refresh({ withRelated: [ 'category', 'document' ] }) )
+		.tap( award => {
+			if ( officeId ) {
+				return this.createAction( award, officeId, null, data.note );
+			}
+		});
 	}
 
 
@@ -107,17 +124,43 @@ class AwardsEndpoint {
 	 * @return {Promise}
 	 */
 	update( id, data ) {
-		return this.validateAward( data )
+		let officeId;
+		let validate = this.validateAward( data )
 		.tap( data => {
 			data.id = id;
 			if ( 'request' === data.action ) {
 				return;
 			}
-			return this.Hub.hasOverUser( data.user, `prestige_${data.action}_${data.level}` );
+			return this.Hub.hasOverUser( data.user, `prestige_${data.action}_${data.level}` )
+			.then( id => {
+				officeId = id;
+				if ( 'nominate' === data.action ) {
+					data.nominate = id;
+				} else {
+					data.awarder = id;
+				}
+			});
 		})
-		.then( data => _.omit( data, [ 'action', 'level' ] ) )
-		.then( data => new AwardModel( data ).save() )
-		.then( award => award.refresh({ withRelated: [ 'category' ] }) );
+		.then( data => _.omit( data, [ 'action', 'level' ] ) );
+
+		let get = new AwardModel({ id: id }).fetch({ require: true });
+
+		return Promise.join(
+			validate, get,
+			( valid, model ) => {
+				let prev = model.toJSON();
+				if ( ! officeId && 'Requested' !== model.get( 'status' ) ) {
+					throw new AuthError( 'Cannot modify own approved awards' );
+				}
+				let action = 'Modified';
+				if ( valid.status !== model.get( 'status' ) ) {
+					action = valid.status;
+				}
+				return this.createAction( model, officeId, action, data.note, prev )
+				.then( () => model.save( valid ) );
+			}
+		)
+		.then( award => award.refresh({ withRelated: [ 'category', 'document' ] }) );
 	}
 
 
@@ -160,6 +203,9 @@ class AwardsEndpoint {
 		}
 		if ( filter.category ) {
 			query.where( 'categoryId', filter.category );
+		}
+		if ( filter.document ) {
+			query.where( 'documentId', filter.document );
 		}
 		if ( filter.source ) {
 			query.where( 'source', 'LIKE', `%${filter.source}%` );
@@ -288,6 +334,27 @@ class AwardsEndpoint {
 
 			return data;
 		});
+	}
+
+
+	/**
+	 * Creates and saves an action.
+	 * @param {AwardModel} award    The award.
+	 * @param {Number}     officeId Officer ID.
+	 * @param {String}     action   Optional. The action to save.
+	 * @param {String}     note     Optional. The note to save.
+	 * @param {Object}     prev     Optional. Previous data.
+	 * @return {ActionModel}
+	 */
+	createAction( award, officeId, action, note, prev ) {
+		return new ActionModel({
+			awardId: award.get( 'id' ),
+			office: officeId,
+			user: this.userId,
+			action: action || award.get( 'status' ),
+			previous: prev || {},
+			note: note
+		}).save();
 	}
 
 	/**

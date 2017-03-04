@@ -8,6 +8,8 @@ exports.up = function( knex ) {
 		table.date( 'date' ).index().notNullable();
 		table.string( 'name' ).notNullable();
 		table.string( 'description' );
+		table.integer( 'categoryId', 11 ).unsigned().index()
+		.references( 'document_categories.id' ).onDelete( 'RESTRICT' ).onUpdate( 'CASCADE' );
 	});
 };
 
