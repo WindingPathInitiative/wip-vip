@@ -108,7 +108,7 @@ class AwardsEndpoint {
 		})
 		.then( data => _.omit( data, [ 'action', 'level' ] ) )
 		.then( data => new AwardModel( data ).save() )
-		.then( award => award.refresh({ withRelated: [ 'category', 'document' ] }) )
+		.then( award => award.refresh({ withRelated: [ 'category' ] }) )
 		.tap( award => {
 			if ( officeId ) {
 				return this.createAction( award, officeId, null, data.note );
@@ -241,6 +241,9 @@ class AwardsEndpoint {
 	 */
 	validateAward( data ) {
 		const validate = require( '../helpers/validation' );
+
+		// Clone data to not mutate reference.
+		data = _.clone( data );
 
 		let constraints = {
 			user: { presence: true, numericality: { onlyInteger: true } },

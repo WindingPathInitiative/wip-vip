@@ -7,6 +7,7 @@ const _      = require( 'lodash' );
 
 const hub = require( './helpers' ).hub;
 const AwardsEndpoint = require( '../endpoints/awards' );
+const ActionModel = require( '../models/action' );
 
 module.exports = function() {
 	it( 'constructs correctly', function() {
@@ -243,25 +244,37 @@ module.exports = function() {
 				return Promise.resolve( true );
 			};
 
-			it( `verifies correct role for ${level} nominations`, function() {
+			it( `verifies correct role for ${level} nominations`, function( done ) {
 				let newData = Object.assign( {}, data );
 				newData[ level ] = 10;
 				newHub.action = 'nominate';
-				new AwardsEndpoint( newHub, 1 ).create( newData );
+				new AwardsEndpoint( newHub, 1 ).create( newData )
+				.then( award => {
+					validateAward( award.toJSON() );
+					done();
+				});
 			});
 
-			it( `verifies correct role for ${level} awards`, function() {
+			it( `verifies correct role for ${level} awards`, function( done ) {
 				let newData = Object.assign( {}, data, { action: 'award' } );
 				newData[ level ] = 10;
 				newHub.action = newData.action;
-				new AwardsEndpoint( newHub, 1 ).create( newData );
+				new AwardsEndpoint( newHub, 1 ).create( newData )
+				.then( award => {
+					validateAward( award.toJSON() );
+					done();
+				});
 			});
 
-			it( `verifies correct role for ${level} deducts`, function() {
+			it( `verifies correct role for ${level} deducts`, function( done ) {
 				let newData = Object.assign( {}, data, { action: 'deduct' } );
 				newData[ level ] = -10;
 				newHub.action = newData.action;
-				new AwardsEndpoint( newHub, 1 ).create( newData );
+				new AwardsEndpoint( newHub, 1 ).create( newData )
+				.then( award => {
+					validateAward( award.toJSON() );
+					done();
+				});
 			});
 		});
 
@@ -271,6 +284,7 @@ module.exports = function() {
 			.then( award => {
 				award = award.toJSON();
 				award.should.have.property( 'status', 'Nominated' );
+				award.should.have.property( 'nominate', 1 );
 				done();
 			});
 		});
@@ -281,6 +295,7 @@ module.exports = function() {
 			.then( award => {
 				award = award.toJSON();
 				award.should.have.property( 'status', 'Awarded' );
+				award.should.have.property( 'awarder', 1 );
 				done();
 			});
 		});
@@ -291,6 +306,7 @@ module.exports = function() {
 			.then( award => {
 				award = award.toJSON();
 				award.should.have.property( 'status', 'Awarded' );
+				award.should.have.property( 'awarder', 1 );
 				done();
 			});
 		});
@@ -301,6 +317,54 @@ module.exports = function() {
 			.then( award => {
 				award = award.toJSON();
 				validateAward( award );
+				let testObj = _.merge( newData, {
+					status: 'Nominated',
+					nominate: 1
+				} );
+				delete testObj.category;
+				award.should.have.properties( testObj );
+				done();
+			});
+		});
+
+		it( 'does not create an action on request', function( done ) {
+			let newData = Object.assign( {}, data, { general: 10 } );
+			new AwardsEndpoint( hub(), 2 ).create( newData )
+			.then( award => new ActionModel().where({ awardId: award.get( 'id' ) }).fetchAll() )
+			.then( actions => {
+				actions.should.have.length( 0 );
+				done();
+			});
+		});
+
+		it( 'does create an action on nomination', function( done ) {
+			let newData = Object.assign( {}, data, { general: 10 } );
+			new AwardsEndpoint( hub(), 1 ).create( newData )
+			.then( award => new ActionModel().where({ awardId: award.get( 'id' ) }).fetchAll() )
+			.then( actions => {
+				actions.should.have.length( 1 );
+				let action = actions.at( 0 ).toJSON();
+				action.should.have.properties({
+					action: 'Nominated',
+					user: 1,
+					office: 1
+				});
+				done();
+			});
+		});
+
+		it( 'does create an action on awarding', function( done ) {
+			let newData = Object.assign( {}, data, { general: 10, action: 'award' } );
+			new AwardsEndpoint( hub(), 1 ).create( newData )
+			.then( award => new ActionModel().where({ awardId: award.get( 'id' ) }).fetchAll() )
+			.then( actions => {
+				actions.should.have.length( 1 );
+				let action = actions.at( 0 ).toJSON();
+				action.should.have.properties({
+					action: 'Awarded',
+					user: 1,
+					office: 1
+				});
 				done();
 			});
 		});
