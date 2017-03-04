@@ -129,6 +129,7 @@ class AwardsEndpoint {
 		.tap( data => {
 			data.id = id;
 			if ( 'request' === data.action ) {
+				officeId = 0;
 				return;
 			}
 			return this.Hub.hasOverUser( data.user, `prestige_${data.action}_${data.level}` )
