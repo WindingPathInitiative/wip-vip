@@ -10,6 +10,7 @@ exports.up = function( knex ) {
 		table.integer( 'entryLimit' );
 		table.date( 'start' ).index().notNullable();
 		table.date( 'end' ).index();
+		table.enum( 'type', [ 'prestige', 'vip' ] ).index().notNullable().defaultTo( 'prestige' );
 	});
 };
 
