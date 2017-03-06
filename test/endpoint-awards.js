@@ -238,7 +238,7 @@ module.exports = function() {
 			it( `fails without providing ${key}`, function( done ) {
 				new AwardsEndpoint( null, 1 ).create( _.omit( data, key ) )
 				.catch( err => {
-					err.should.be.an.Error();
+					err.should.be.an.Error().and.be.an.instanceOf( errors.RequestError );
 					done();
 				});
 			});
@@ -252,7 +252,7 @@ module.exports = function() {
 				let badData = _.set( _.clone( data ), key, 'bad!' );
 				new AwardsEndpoint( null, 1 ).create( badData )
 				.catch( err => {
-					err.should.be.an.Error();
+					err.should.be.an.Error().and.be.an.instanceOf( errors.RequestError );
 					done();
 				});
 			});
@@ -261,7 +261,7 @@ module.exports = function() {
 		it( 'fails if negative prestige set without deduct action', function( done ) {
 			new AwardsEndpoint( null, 1 ).create( _.assign( {}, data, { general: -10 } ) )
 			.catch( err => {
-				err.should.be.an.Error();
+				err.should.be.an.Error().and.be.an.instanceOf( errors.RequestError );
 				done();
 			});
 		});
@@ -269,7 +269,7 @@ module.exports = function() {
 		it( 'fails if saving with no prestige', function( done ) {
 			new AwardsEndpoint( null, 1 ).create( data )
 			.catch( err => {
-				err.should.be.an.Error();
+				err.should.be.an.Error().and.be.an.instanceOf( errors.RequestError );
 				done();
 			});
 		});
@@ -278,7 +278,6 @@ module.exports = function() {
 			let newData = Object.assign( {}, data, { user: 'me', general: 10 } );
 			new AwardsEndpoint( null, 1 ).create( newData )
 			.then( award => {
-				award = award.toJSON();
 				award.should.have.property( 'status', 'Requested' );
 				done();
 			});
@@ -288,16 +287,15 @@ module.exports = function() {
 			let newData = Object.assign( {}, data, { user: 'me', general: 10 } );
 			new AwardsEndpoint( null, 1 ).create( newData )
 			.then( award => {
-				award = award.toJSON();
 				award.should.have.property( 'user', 1 );
 				done();
 			});
 		});
 
-		it( 'does not check permission for self', function() {
+		it( 'does not check permission for self', function( done ) {
 			let newData = Object.assign( {}, data, { general: 10 } );
 			new AwardsEndpoint( null, 2 ).create( newData )
-			.should.be.a.Promise();
+			.then( () => done() );
 		});
 
 		let levels = [ 'general', 'regional', 'national' ];
@@ -314,7 +312,7 @@ module.exports = function() {
 				newHub.action = 'nominate';
 				new AwardsEndpoint( newHub, 1 ).create( newData )
 				.then( award => {
-					validateAward( award.toJSON() );
+					validateAward( award );
 					done();
 				});
 			});
@@ -325,7 +323,7 @@ module.exports = function() {
 				newHub.action = newData.action;
 				new AwardsEndpoint( newHub, 1 ).create( newData )
 				.then( award => {
-					validateAward( award.toJSON() );
+					validateAward( award );
 					done();
 				});
 			});
@@ -336,7 +334,7 @@ module.exports = function() {
 				newHub.action = newData.action;
 				new AwardsEndpoint( newHub, 1 ).create( newData )
 				.then( award => {
-					validateAward( award.toJSON() );
+					validateAward( award );
 					done();
 				});
 			});
@@ -346,7 +344,6 @@ module.exports = function() {
 			let newData = Object.assign( {}, data, { general: 10 } );
 			new AwardsEndpoint( hub(), 1 ).create( newData )
 			.then( award => {
-				award = award.toJSON();
 				award.should.have.property( 'status', 'Nominated' );
 				award.should.have.property( 'nominate', 1 );
 				done();
@@ -357,7 +354,6 @@ module.exports = function() {
 			let newData = Object.assign( {}, data, { action: 'award', general: 10 } );
 			new AwardsEndpoint( hub(), 1 ).create( newData )
 			.then( award => {
-				award = award.toJSON();
 				award.should.have.property( 'status', 'Awarded' );
 				award.should.have.property( 'awarder', 1 );
 				done();
@@ -368,7 +364,6 @@ module.exports = function() {
 			let newData = Object.assign( {}, data, { action: 'deduct', general: -10 } );
 			new AwardsEndpoint( hub(), 1 ).create( newData )
 			.then( award => {
-				award = award.toJSON();
 				award.should.have.property( 'status', 'Awarded' );
 				award.should.have.property( 'awarder', 1 );
 				done();
@@ -379,7 +374,6 @@ module.exports = function() {
 			let newData = Object.assign( {}, data, { general: 10 } );
 			new AwardsEndpoint( hub(), 1 ).create( newData )
 			.then( award => {
-				award = award.toJSON();
 				validateAward( award );
 				let testObj = _.merge( newData, {
 					status: 'Nominated',
@@ -394,9 +388,9 @@ module.exports = function() {
 		it( 'does not create an action on request', function( done ) {
 			let newData = Object.assign( {}, data, { general: 10 } );
 			new AwardsEndpoint( hub(), 2 ).create( newData )
-			.then( award => new ActionModel().where({ awardId: award.get( 'id' ) }).fetchAll() )
+			.then( award => new ActionModel().where({ awardId: award.id }).fetchAll() )
 			.then( actions => {
-				actions.should.have.length( 0 );
+				actions.toJSON().should.have.length( 0 );
 				done();
 			});
 		});
@@ -404,9 +398,9 @@ module.exports = function() {
 		it( 'does create an action on nomination', function( done ) {
 			let newData = Object.assign( {}, data, { general: 10 } );
 			new AwardsEndpoint( hub(), 1 ).create( newData )
-			.then( award => new ActionModel().where({ awardId: award.get( 'id' ) }).fetchAll() )
+			.then( award => new ActionModel().where({ awardId: award.id }).fetchAll() )
 			.then( actions => {
-				actions.should.have.length( 1 );
+				actions.toJSON().should.have.length( 1 );
 				let action = actions.at( 0 ).toJSON();
 				action.should.have.properties({
 					action: 'Nominated',
@@ -420,9 +414,9 @@ module.exports = function() {
 		it( 'does create an action on awarding', function( done ) {
 			let newData = Object.assign( {}, data, { general: 10, action: 'award' } );
 			new AwardsEndpoint( hub(), 1 ).create( newData )
-			.then( award => new ActionModel().where({ awardId: award.get( 'id' ) }).fetchAll() )
+			.then( award => new ActionModel().where({ awardId: award.id }).fetchAll() )
 			.then( actions => {
-				actions.should.have.length( 1 );
+				actions.toJSON().should.have.length( 1 );
 				let action = actions.at( 0 ).toJSON();
 				action.should.have.properties({
 					action: 'Awarded',
@@ -449,7 +443,7 @@ module.exports = function() {
 			it( `fails without providing ${key}`, function( done ) {
 				new AwardsEndpoint( null, 1 ).update( 1, _.omit( data, key ) )
 				.catch( err => {
-					err.should.be.an.Error();
+					err.should.be.an.Error().and.be.an.instanceOf( errors.RequestError );
 					done();
 				});
 			});
@@ -463,7 +457,7 @@ module.exports = function() {
 				let badData = _.set( _.clone( data ), key, 'bad!' );
 				new AwardsEndpoint( null, 1 ).update( 1, badData )
 				.catch( err => {
-					err.should.be.an.Error();
+					err.should.be.an.Error().and.be.an.instanceOf( errors.RequestError );
 					done();
 				});
 			});
@@ -472,7 +466,7 @@ module.exports = function() {
 		it( 'fails if negative prestige set without deduct action', function( done ) {
 			new AwardsEndpoint( null, 1 ).update( 1, _.assign( {}, data, { general: -10 } ) )
 			.catch( err => {
-				err.should.be.an.Error();
+				err.should.be.an.Error().and.be.an.instanceOf( errors.RequestError );
 				done();
 			});
 		});
@@ -480,7 +474,7 @@ module.exports = function() {
 		it( 'fails if saving with no prestige', function( done ) {
 			new AwardsEndpoint( null, 1 ).update( 1, data )
 			.catch( err => {
-				err.should.be.an.Error();
+				err.should.be.an.Error().and.be.an.instanceOf( errors.RequestError );
 				done();
 			});
 		});
@@ -489,7 +483,7 @@ module.exports = function() {
 			let newData = Object.assign( {}, data, { general: 10 } );
 			new AwardsEndpoint( null, 2 ).update( 1, newData )
 			.catch( err => {
-				err.should.be.an.Error();
+				err.should.be.an.Error().and.be.an.instanceOf( errors.AuthError );
 				done();
 			});
 		});
@@ -498,7 +492,7 @@ module.exports = function() {
 			let newData = Object.assign( {}, data, { general: 10 } );
 			new AwardsEndpoint( null, 2 ).update( 3, newData )
 			.then( award => {
-				award.toJSON().should.have.properties({
+				award.should.have.properties({
 					user: 2,
 					status: 'Requested',
 					general: 10,
@@ -522,7 +516,7 @@ module.exports = function() {
 				newHub.action = 'nominate';
 				new AwardsEndpoint( newHub, 1 ).update( 1, newData )
 				.then( award => {
-					validateAward( award.toJSON() );
+					validateAward( award );
 					done();
 				});
 			});
@@ -533,7 +527,7 @@ module.exports = function() {
 				newHub.action = newData.action;
 				new AwardsEndpoint( newHub, 1 ).update( 1, newData )
 				.then( award => {
-					validateAward( award.toJSON() );
+					validateAward( award );
 					done();
 				});
 			});
@@ -544,7 +538,7 @@ module.exports = function() {
 				newHub.action = newData.action;
 				new AwardsEndpoint( newHub, 1 ).update( 1, newData )
 				.then( award => {
-					validateAward( award.toJSON() );
+					validateAward( award );
 					done();
 				});
 			});
@@ -554,7 +548,6 @@ module.exports = function() {
 			let newData = Object.assign( {}, data, { general: 10 } );
 			new AwardsEndpoint( hub(), 1 ).update( 1, newData )
 			.then( award => {
-				award = award.toJSON();
 				award.should.have.property( 'status', 'Nominated' );
 				award.should.have.property( 'nominate', 1 );
 				done();
@@ -565,7 +558,6 @@ module.exports = function() {
 			let newData = Object.assign( {}, data, { action: 'award', general: 10 } );
 			new AwardsEndpoint( hub(), 1 ).update( 1, newData )
 			.then( award => {
-				award = award.toJSON();
 				award.should.have.property( 'status', 'Awarded' );
 				award.should.have.property( 'awarder', 1 );
 				done();
@@ -576,7 +568,6 @@ module.exports = function() {
 			let newData = Object.assign( {}, data, { action: 'deduct', general: -10 } );
 			new AwardsEndpoint( hub(), 1 ).update( 1, newData )
 			.then( award => {
-				award = award.toJSON();
 				award.should.have.property( 'status', 'Awarded' );
 				award.should.have.property( 'awarder', 1 );
 				done();
@@ -587,7 +578,6 @@ module.exports = function() {
 			let newData = Object.assign( {}, data, { general: 10 } );
 			new AwardsEndpoint( hub(), 1 ).update( 1, newData )
 			.then( award => {
-				award = award.toJSON();
 				validateAward( award );
 				let testObj = _.merge( newData, {
 					status: 'Nominated',
@@ -602,9 +592,9 @@ module.exports = function() {
 		it( 'does create an action on nomination', function( done ) {
 			let newData = Object.assign( {}, data, { general: 10 } );
 			new AwardsEndpoint( hub(), 1 ).update( 1, newData )
-			.then( award => new ActionModel().where({ awardId: award.get( 'id' ) }).fetchAll() )
+			.then( award => new ActionModel().where({ awardId: award.id }).fetchAll() )
 			.then( actions => {
-				actions.should.have.length( 2 );
+				actions.toJSON().should.have.length( 2 );
 				let action = actions.at( 1 ).toJSON();
 				action.should.have.properties({
 					action: 'Nominated',
@@ -618,9 +608,9 @@ module.exports = function() {
 		it( 'does create an action on awarding', function( done ) {
 			let newData = Object.assign( {}, data, { general: 10, action: 'award' } );
 			new AwardsEndpoint( hub(), 1 ).update( 3, newData )
-			.then( award => new ActionModel().where({ awardId: award.get( 'id' ) }).fetchAll() )
+			.then( award => new ActionModel().where({ awardId: award.id }).fetchAll() )
 			.then( actions => {
-				actions.should.have.length( 1 );
+				actions.toJSON().should.have.length( 1 );
 				let action = actions.at( 0 ).toJSON();
 				action.should.have.properties({
 					action: 'Awarded',
@@ -640,7 +630,7 @@ module.exports = function() {
 		it( 'throws when removing a non-existent award', function( done ) {
 			new AwardsEndpoint( null, 1 ).delete( 999 )
 			.catch( err => {
-				err.should.be.an.Error();
+				err.should.be.an.Error().and.be.an.instanceOf( errors.NotFoundError );
 				done();
 			});
 		});
@@ -648,7 +638,7 @@ module.exports = function() {
 		it( 'throws when removing an already removed award', function( done ) {
 			new AwardsEndpoint( null, 1 ).delete( 5 )
 			.catch( err => {
-				err.should.be.an.Error();
+				err.should.be.an.Error().and.be.an.instanceOf( errors.RequestError );
 				done();
 			});
 		});
@@ -656,7 +646,7 @@ module.exports = function() {
 		it( 'throws when removing with no offices', function( done ) {
 			new AwardsEndpoint( hub( 200, [] ), 3 ).delete( 1 )
 			.catch( err => {
-				err.should.be.an.Error();
+				err.should.be.an.Error().and.be.an.instanceOf( errors.AuthError );
 				done();
 			});
 		});
@@ -667,7 +657,7 @@ module.exports = function() {
 
 			new AwardsEndpoint( hub, 3 ).delete( 1 )
 			.catch( err => {
-				err.should.be.an.Error();
+				err.should.be.an.Error().and.be.an.instanceOf( errors.AuthError );
 				done();
 			});
 		});
@@ -675,7 +665,7 @@ module.exports = function() {
 		it( 'works if requested by self', function( done ) {
 			new AwardsEndpoint( null, 1 ).delete( 3 )
 			.then( award => {
-				award.toJSON().should.have.property( 'status', 'Denied' );
+				award.should.have.property( 'status', 'Denied' );
 				done();
 			});
 		});
@@ -692,7 +682,7 @@ module.exports = function() {
 			.then( () => {
 				new AwardsEndpoint( hub( 200, [{ id: 2 }] ), 3 ).delete( 10 )
 				.then( award => {
-					award.toJSON().should.have.property( 'status', 'Denied' );
+					award.should.have.property( 'status', 'Denied' );
 					done();
 				});
 			});
@@ -710,7 +700,7 @@ module.exports = function() {
 			.then( () => {
 				new AwardsEndpoint( hub( 200, [{ id: 2 }] ), 3 ).delete( 10 )
 				.then( award => {
-					award.toJSON().should.have.property( 'status', 'Denied' );
+					award.should.have.property( 'status', 'Denied' );
 					done();
 				});
 			});
@@ -723,7 +713,7 @@ module.exports = function() {
 			);
 			new AwardsEndpoint( hub, 2 ).delete( 1 )
 			.then( award => {
-				award.toJSON().should.have.property( 'status', 'Denied' );
+				award.should.have.property( 'status', 'Denied' );
 				done();
 			});
 		});

@@ -138,6 +138,12 @@ class AwardsEndpoint {
 			if ( officeId ) {
 				return this.createAction( award, officeId, null, data.note );
 			}
+		})
+		.then( award => {
+			if ( ! award ) {
+				console.log( data );
+			}
+			return award.toJSON()
 		});
 	}
 
@@ -169,7 +175,11 @@ class AwardsEndpoint {
 		})
 		.then( data => _.omit( data, [ 'action', 'level' ] ) );
 
-		let get = new AwardModel({ id: id }).fetch({ require: true });
+		let get = new AwardModel({ id: id })
+		.fetch({ require: true })
+		.catch( () => {
+			throw new NotFoundError();
+		});
 
 		return Promise.join(
 			validate, get,
@@ -186,7 +196,8 @@ class AwardsEndpoint {
 				.then( () => model.save( valid ) );
 			}
 		)
-		.then( award => award.refresh({ withRelated: [ 'category', 'document' ] }) );
+		.then( award => award.refresh({ withRelated: [ 'category', 'document' ] }) )
+		.then( award => award.toJSON() );
 	}
 
 
@@ -200,6 +211,9 @@ class AwardsEndpoint {
 		let officeId;
 		return new AwardModel({ id: id })
 		.fetch({ require: true, withRelated: [ 'category', 'document' ] })
+		.catch( () => {
+			throw new NotFoundError();
+		})
 		.then( award => {
 			let status = award.get( 'status' );
 
@@ -250,7 +264,8 @@ class AwardsEndpoint {
 				return this.createAction( award, officeId, 'Revoked', note, award.toJSON() );
 			}
 		})
-		.then( award => award.save( 'status', 'Denied', { patch: true } ) );
+		.then( award => award.save( 'status', 'Denied', { patch: true } ) )
+		.then( award => award.toJSON() );
 	}
 
 
