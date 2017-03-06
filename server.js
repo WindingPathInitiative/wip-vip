@@ -9,6 +9,7 @@ app.use( require( 'express-partial-response' )() );
 app.use( require( 'morgan' )( 'dev' ) );
 
 app.use( '/v1/awards/', require( './endpoints/awards' ).route() );
+app.use( '/v1/categories/', require( './endpoints/categories' ).route() );
 
 app.get( '/', ( req, res ) => {
 	let version = require( './package.json' ).version;

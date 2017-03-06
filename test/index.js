@@ -13,3 +13,5 @@ before( 'create db', function( done ) {
 describe( 'User Hub', require( './helper-hub' ) );
 
 describe( 'Awards', require( './endpoint-awards' ) );
+
+describe( 'Categories', require( './endpoint-categories' ) );
