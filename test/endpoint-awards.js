@@ -302,7 +302,10 @@ module.exports = function() {
 		levels.forEach( level => {
 			let newHub = hub();
 			newHub.hasOverUser = ( user, roles ) => {
-				roles.should.containEql( level ).and.containEql( newHub.action );
+				roles.should.containEql( newHub.action );
+				if ( 'award' === newHub.action ) {
+					roles.should.containEql( level );
+				}
 				return Promise.resolve( true );
 			};
 
@@ -506,7 +509,10 @@ module.exports = function() {
 		levels.forEach( level => {
 			let newHub = hub();
 			newHub.hasOverUser = ( user, roles ) => {
-				roles.should.containEql( level ).and.containEql( newHub.action );
+				roles.should.containEql( newHub.action );
+				if ( 'award' === newHub.action ) {
+					roles.should.containEql( level );
+				}
 				return Promise.resolve( true );
 			};
 

@@ -121,7 +121,11 @@ class AwardsEndpoint {
 			if ( 'request' === data.action ) {
 				return;
 			}
-			return this.Hub.hasOverUser( data.user, `prestige_${data.action}_${data.level}` )
+			let role = `prestige_${data.action}`;
+			if ( 'award' === data.action ) {
+				role += `_${data.level}`;
+			}
+			return this.Hub.hasOverUser( data.user, role )
 			.then( id => {
 				officeId = id;
 				if ( 'nominate' === data.action ) {
@@ -163,7 +167,11 @@ class AwardsEndpoint {
 				officeId = 0;
 				return;
 			}
-			return this.Hub.hasOverUser( data.user, `prestige_${data.action}_${data.level}` )
+			let role = `prestige_${data.action}`;
+			if ( 'award' === data.action ) {
+				role += `_${data.level}`;
+			}
+			return this.Hub.hasOverUser( data.user, role )
 			.then( id => {
 				officeId = id;
 				if ( 'nominate' === data.action ) {
