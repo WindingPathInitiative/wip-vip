@@ -14,6 +14,8 @@ const AwardsEndpoint = require( '../endpoints/awards' );
 const AwardModel = require( '../models/award' );
 const ActionModel = require( '../models/action' );
 
+const errors = require( '../helpers/errors' );
+
 module.exports = function() {
 	it( 'constructs correctly', function() {
 		let instance = new AwardsEndpoint( hub(), 1 );
@@ -83,6 +85,54 @@ module.exports = function() {
 			.then( awards => {
 				awards.should.be.an.Array().and.have.length( 1 );
 				awards.forEach( validateAward );
+				done();
+			});
+		});
+	});
+
+	describe( 'GET /v1/awards/{id}', function() {
+
+		it( 'throws if award does not exist', function( done ) {
+			new AwardsEndpoint( null, 1 )
+			.getOne( 100 )
+			.catch( err => {
+				err.should.be.an.Error().and.an.instanceOf( errors.NotFoundError );
+				done();
+			});
+		});
+
+		it( 'returns an approved award without permission', function( done ) {
+			new AwardsEndpoint( null, 2 )
+			.getOne( 1 )
+			.then( award => {
+				validateAward( award );
+				done();
+			});
+		});
+
+		it( 'returns a non-approved award if it\' for the user', function( done ) {
+			new AwardsEndpoint( null, 1 )
+			.getOne( 3 )
+			.then( award => {
+				validateAward( award );
+				done();
+			});
+		});
+
+		it( 'throws if non-approved and does not have permission', function( done ) {
+			new AwardsEndpoint( hub( 403 ), 2 )
+			.getOne( 3 )
+			.catch( err => {
+				err.should.be.an.Error().and.an.instanceOf( errors.AuthError );
+				done();
+			});
+		});
+
+		it( 'returns a non-approved award and has permission', function( done ) {
+			new AwardsEndpoint( hub(), 2 )
+			.getOne( 3 )
+			.then( award => {
+				validateAward( award );
 				done();
 			});
 		});

@@ -18,3 +18,14 @@ class RequestError extends Error {
 	}
 }
 module.exports.RequestError = RequestError;
+
+
+class NotFoundError extends Error {
+	constructor( message, status ) {
+		message = message || 'Not found';
+		super( message );
+		this.name = 'NotFoundError';
+		this.status = status || 404;
+	}
+}
+module.exports.NotFoundError = NotFoundError;

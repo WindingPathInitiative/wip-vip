@@ -9,6 +9,7 @@ const ActionModel   = require( '../models/action' );
 
 const RequestError  = require( '../helpers/errors' ).RequestError;
 const AuthError     = require( '../helpers/errors' ).AuthError;
+const NotFoundError = require( '../helpers/errors' ).NotFoundError;
 
 class AwardsEndpoint {
 
@@ -49,6 +50,30 @@ class AwardsEndpoint {
 		return promise
 		.then( () => this.filterAwards( filters ) )
 		.then( awards => awards.toJSON() );
+	}
+
+
+	/**
+	 * Gets an individual award.
+	 * @param {Number} id The award ID.
+	 * @return {Promise}
+	 */
+	getOne( id ) {
+		return new AwardModel({ id: id })
+		.fetch({ require: true, withRelated: [ 'category', 'document' ] })
+		.catch( () => {
+			throw new NotFoundError();
+		})
+		.tap( award => {
+			if (
+				'Awarded' === award.get( 'status' ) ||
+				Number.parseInt( award.get( 'user' ) ) === this.userId
+			) {
+				return null;
+			}
+			return this.Hub.hasOverUser( award.get( 'user' ), 'prestige_view' );
+		})
+		.then( award => award.toJSON() );
 	}
 
 
@@ -428,6 +453,16 @@ class AwardsEndpoint {
 				return new AwardsEndpoint( req.hub, req.user )
 				.get( req.query )
 				.then( awards => res.json({ results: awards }) )
+				.catch( err => next( err ) );
+			}
+		);
+
+		router.get( '/:id(\\d+)',
+			hub,
+			( req, res, next ) => {
+				return new AwardsEndpoint( req.hub, req.user )
+				.getOne( req.params.id )
+				.then( award => res.json( award ) )
 				.catch( err => next( err ) );
 			}
 		);
