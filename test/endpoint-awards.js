@@ -580,6 +580,8 @@ module.exports = function() {
 				done();
 			});
 		});
+
+		it( 'updates related MC reviews' );
 	});
 
 	describe( 'DELETE /v1/awards/{id}', function() {
@@ -685,7 +687,26 @@ module.exports = function() {
 			});
 		});
 
-		it( 'updated related MC reviews' );
+		it( 'creates an action entry', function( done ) {
+			let hub = helpers.seriesHub(
+				[{ body: [{ id: 2 }] },
+				{ statusCode: 200, body: { offices: [{ id: 1 }] } }]
+			);
+			new AwardsEndpoint( hub, 2 ).delete( 1, 'Test note' )
+			.then( () => new ActionModel().where({ action: 'Revoked' }).fetch() )
+			.then( action => {
+				action.toJSON().should.have.properties({
+					awardId: 1,
+					office: 1,
+					user: 2,
+					action: 'Revoked',
+					note: 'Test note'
+				});
+				done();
+			});
+		})
+
+		it( 'updates related MC reviews' );
 	});
 }
 
