@@ -11,7 +11,7 @@ exports.up = function( knex ) {
 		table.integer( 'general' ).notNullable();
 		table.integer( 'regional' ).notNullable();
 		table.integer( 'national' ).notNullable();
-		table.enum( 'status', [ 'Requested', 'Reviewing', 'Approved', 'Revoked' ] ).defaultTo( 'Requested' ).index().notNullable();
+		table.enum( 'status', [ 'Requested', 'Reviewing', 'Approved', 'Removed' ] ).defaultTo( 'Requested' ).index().notNullable();
 		table.enum( 'currentLevel', [ 'Domain', 'Regional', 'National' ] ).notNullable();
 		table.integer( 'office' ).index().notNullable();
 	});

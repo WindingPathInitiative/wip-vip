@@ -665,7 +665,7 @@ module.exports = function() {
 		it( 'works if requested by self', function( done ) {
 			new AwardsEndpoint( null, 1 ).delete( 3 )
 			.then( award => {
-				award.should.have.property( 'status', 'Denied' );
+				award.should.have.property( 'status', 'Removed' );
 				done();
 			});
 		});
@@ -682,7 +682,7 @@ module.exports = function() {
 			.then( () => {
 				new AwardsEndpoint( hub( 200, [{ id: 2 }] ), 3 ).delete( 10 )
 				.then( award => {
-					award.should.have.property( 'status', 'Denied' );
+					award.should.have.property( 'status', 'Removed' );
 					done();
 				});
 			});
@@ -700,7 +700,7 @@ module.exports = function() {
 			.then( () => {
 				new AwardsEndpoint( hub( 200, [{ id: 2 }] ), 3 ).delete( 10 )
 				.then( award => {
-					award.should.have.property( 'status', 'Denied' );
+					award.should.have.property( 'status', 'Removed' );
 					done();
 				});
 			});
@@ -713,7 +713,7 @@ module.exports = function() {
 			);
 			new AwardsEndpoint( hub, 2 ).delete( 1 )
 			.then( award => {
-				award.should.have.property( 'status', 'Denied' );
+				award.should.have.property( 'status', 'Removed' );
 				done();
 			});
 		});
@@ -722,7 +722,7 @@ module.exports = function() {
 			new AwardsEndpoint( null, 1 ).delete( 3 )
 			.then( () => new AwardModel({ id: 3 }).fetch() )
 			.then( award => {
-				award.toJSON().should.have.property( 'status', 'Denied' );
+				award.toJSON().should.have.property( 'status', 'Removed' );
 				done();
 			});
 		});
@@ -733,13 +733,13 @@ module.exports = function() {
 				{ statusCode: 200, body: { offices: [{ id: 1 }] } }]
 			);
 			new AwardsEndpoint( hub, 2 ).delete( 1, 'Test note' )
-			.then( () => new ActionModel().where({ action: 'Revoked' }).fetch() )
+			.then( () => new ActionModel().where({ action: 'Removed' }).fetch() )
 			.then( action => {
 				action.toJSON().should.have.properties({
 					awardId: 1,
 					office: 1,
 					user: 2,
-					action: 'Revoked',
+					action: 'Removed',
 					note: 'Test note'
 				});
 				done();

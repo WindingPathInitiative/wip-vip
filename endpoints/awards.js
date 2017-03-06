@@ -219,8 +219,8 @@ class AwardsEndpoint {
 
 			if ( 'Requested' === status && this.userId === award.get( 'user' ) ) {
 				return award;
-			} else if ( 'Denied' === status ) {
-				throw new RequestError( 'Award is already denied' );
+			} else if ( 'Removed' === status ) {
+				throw new RequestError( 'Award is already removed' );
 			}
 
 			let promise;
@@ -261,10 +261,10 @@ class AwardsEndpoint {
 		})
 		.tap( award => {
 			if ( officeId ) {
-				return this.createAction( award, officeId, 'Revoked', note, award.toJSON() );
+				return this.createAction( award, officeId, 'Removed', note, award.toJSON() );
 			}
 		})
-		.then( award => award.save( 'status', 'Denied', { patch: true } ) )
+		.then( award => award.save( 'status', 'Removed', { patch: true } ) )
 		.then( award => award.toJSON() );
 	}
 

@@ -11,7 +11,7 @@ exports.up = function( knex ) {
 		.references( 'mc.id' ).onDelete( 'CASCADE' ).onUpdate( 'CASCADE' );;
 		table.integer( 'office' ).index().notNullable();
 		table.integer( 'user' ).index().notNullable();
-		table.enum( 'action', [ 'Nominated', 'Awarded', 'Modified', 'Revoked' ] ).notNullable();
+		table.enum( 'action', [ 'Nominated', 'Awarded', 'Modified', 'Removed' ] ).notNullable();
 		table.json( 'previous' );
 		table.text( 'note' );
 	});

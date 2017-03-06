@@ -17,7 +17,7 @@ exports.up = function( knex ) {
 		table.integer( 'documentId', 11 ).unsigned().index()
 		.references( 'documents.id' ).onDelete( 'RESTRICT' ).onUpdate( 'CASCADE' );
 		table.integer( 'mcReviewId' ).index();
-		table.enum( 'status', [ 'Requested', 'Nominated', 'Awarded', 'Denied' ] ).index().notNullable().defaultTo( 'Requested' );
+		table.enum( 'status', [ 'Requested', 'Nominated', 'Awarded', 'Removed' ] ).index().notNullable().defaultTo( 'Requested' );
 		table.integer( 'general' ).defaultTo( 0 );
 		table.integer( 'regional' ).defaultTo( 0 );
 		table.integer( 'national' ).defaultTo( 0 );
