@@ -7,11 +7,35 @@ function getHub( status, body ) {
 		body = { message: 'Success', offices: [{ id: 1 }] };
 	}
 
-	let req = params => Promise.resolve({
-		statusCode: status || 200,
-		body: Object.assign( {}, params.qs, body )
-	});
+	const req = () => {
+		return Promise.resolve({
+			statusCode: status || 200,
+			body: body
+		});
+	}
 
 	return new Hub( 'base', 'token', req );
 }
 module.exports.hub = getHub;
+
+
+function seriesHub( responses ) {
+
+	const req = () => {
+		let resp = responses.shift();
+		return Promise.resolve( Object.assign({
+			statusCode: 200,
+			body: {}
+		}, resp ) );
+	}
+
+	return new Hub( 'base', 'token', req );
+}
+module.exports.seriesHub = seriesHub;
+
+
+function resetDB( done ) {
+	let knex = require( '../helpers/db' );
+	knex.seed.run().then( () => done() );
+}
+module.exports.resetDB = resetDB;

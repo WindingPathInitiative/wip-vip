@@ -167,11 +167,65 @@ class AwardsEndpoint {
 
 	/**
 	 * Deletes an award.
-	 * @param {Number} id ID of award to remove.
+	 * @param {Number} id   ID of award to remove.
+	 * @param {String} note Optional. Note to attach to removal.
 	 * @return {Promise}
 	 */
-	delete( id ) {
-		new AwardModel({ id: id }).delete();
+	delete( id, note ) {
+		let officeId;
+		return new AwardModel({ id: id })
+		.fetch({ require: true, withRelated: [ 'category', 'document' ] })
+		.then( award => {
+			let status = award.get( 'status' );
+
+			if ( 'Requested' === status && this.userId === award.get( 'user' ) ) {
+				return award;
+			} else if ( 'Denied' === status ) {
+				throw new RequestError( 'Award is already denied' );
+			}
+
+			let promise;
+			if ( 'Requested' !== status ) {
+				let creatingOfficeId;
+				if ( 'Nominated' === status ) {
+					creatingOfficeId = award.get( 'nominate' );
+				} else {
+					creatingOfficeId = award.get( 'awarder' );
+				}
+				promise = this.Hub.userOffices()
+				.then( offices => {
+					if ( ! offices.length ) {
+						throw new AuthError( 'User has no offices' );
+					}
+					let ids = _.map( offices, 'id' );
+					if ( -1 !== ids.indexOf( creatingOfficeId ) ) {
+						officeId = creatingOfficeId;
+						return true;
+					}
+					return false;
+				});
+			} else {
+				promise = Promise.resolve( false );
+			}
+
+			return promise
+			.then( result => {
+				if ( ! result ) {
+					return this.Hub.hasOverUser( award.get( 'user' ), 'prestige_deduct' )
+					.then( id => {
+						officeId = id;
+						return award;
+					});
+				}
+				return award;
+			});
+		})
+		.tap( award => {
+			if ( officeId ) {
+				return this.createAction( award, officeId, 'Revoked', note, award.toJSON() );
+			}
+		})
+		.then( award => award.save( 'status', 'Denied', { patch: true } ) );
 	}
 
 
@@ -406,7 +460,17 @@ class AwardsEndpoint {
 				.then( award => res.json( award ) )
 				.catch( err => next( err ) );
 			}
-		)
+		);
+
+		router.delete( '/:id(\\d+)',
+		hub,
+		( req, res, next ) => {
+			return new AwardsEndpoint( req.hub, req.user )
+			.delete( req.params.id, req.body.note )
+			.then( award => res.json( award ) )
+			.catch( err => next( err ) );
+		}
+		);
 
 		return router;
 	}

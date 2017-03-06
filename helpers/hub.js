@@ -27,6 +27,10 @@ class Hub {
 		});
 	}
 
+	userOffices() {
+		return this.request( '/v1/office/me' );
+	}
+
 	hasOverUser( user, roles ) {
 		return this.request( `/v1/office/verify/user/${user}`, { roles: this.roles( roles ) } )
 		.then( resp => _.get( resp, 'offices[0].id', 0 ) );

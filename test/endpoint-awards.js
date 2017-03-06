@@ -5,8 +5,13 @@
 const should = require( 'should' ); // eslint-disable-line no-unused-vars
 const _      = require( 'lodash' );
 
-const hub = require( './helpers' ).hub;
+const helpers = require( './helpers' );
+const resetDB = helpers.resetDB;
+const hub = helpers.hub;
+
 const AwardsEndpoint = require( '../endpoints/awards' );
+
+const AwardModel = require( '../models/award' );
 const ActionModel = require( '../models/action' );
 
 module.exports = function() {
@@ -46,7 +51,7 @@ module.exports = function() {
 			new AwardsEndpoint( hub(), 1 )
 			.get({ status: 'all' })
 			.then( awards => {
-				awards.should.be.an.Array().and.have.length( 4 );
+				awards.should.be.an.Array().and.have.length( 5 );
 				awards.forEach( validateAward );
 				done();
 			});
@@ -170,10 +175,7 @@ module.exports = function() {
 
 	describe( 'POST /v1/awards', function() {
 
-		beforeEach( 'reset data', function( done ) {
-			let knex = require( '../helpers/db' );
-			knex.seed.run().then( () => done() );
-		});
+		beforeEach( 'reset data', resetDB );
 
 		let data = {
 			user: 2,
@@ -183,9 +185,12 @@ module.exports = function() {
 		};
 
 		Object.keys( data ).forEach( key => {
-			it( `fails without providing ${key}`, function() {
+			it( `fails without providing ${key}`, function( done ) {
 				new AwardsEndpoint( null, 1 ).create( _.omit( data, key ) )
-				.should.be.rejectedWith({ status: 400 });
+				.catch( err => {
+					err.should.be.an.Error();
+					done();
+				});
 			});
 		});
 
@@ -193,21 +198,30 @@ module.exports = function() {
 			if ( 'description' === key ) {
 				return;
 			}
-			it( `fails with malformed ${key}`, function() {
+			it( `fails with malformed ${key}`, function( done ) {
 				let badData = _.set( _.clone( data ), key, 'bad!' );
 				new AwardsEndpoint( null, 1 ).create( badData )
-				.should.be.rejectedWith({ status: 400 });
+				.catch( err => {
+					err.should.be.an.Error();
+					done();
+				});
 			});
 		});
 
-		it( 'fails if negative prestige set without deduct action', function() {
+		it( 'fails if negative prestige set without deduct action', function( done ) {
 			new AwardsEndpoint( null, 1 ).create( _.assign( {}, data, { general: -10 } ) )
-			.should.be.rejectedWith({ status: 400 });
+			.catch( err => {
+				err.should.be.an.Error();
+				done();
+			});
 		});
 
-		it( 'fails if saving with no prestige', function() {
+		it( 'fails if saving with no prestige', function( done ) {
 			new AwardsEndpoint( null, 1 ).create( data )
-			.should.be.rejectedWith({ status: 400, message: 'No prestige awarded' });
+			.catch( err => {
+				err.should.be.an.Error();
+				done();
+			});
 		});
 
 		it( 'sets action to request for self', function( done ) {
@@ -372,10 +386,7 @@ module.exports = function() {
 
 	describe( 'PUT /v1/awards/{id}', function() {
 
-		beforeEach( 'reset data', function( done ) {
-			let knex = require( '../helpers/db' );
-			knex.seed.run().then( () => done() );
-		});
+		beforeEach( 'reset data', resetDB );
 
 		let data = {
 			user: 2,
@@ -385,9 +396,12 @@ module.exports = function() {
 		};
 
 		Object.keys( data ).forEach( key => {
-			it( `fails without providing ${key}`, function() {
+			it( `fails without providing ${key}`, function( done ) {
 				new AwardsEndpoint( null, 1 ).update( 1, _.omit( data, key ) )
-				.should.be.rejectedWith({ status: 400 });
+				.catch( err => {
+					err.should.be.an.Error();
+					done();
+				});
 			});
 		});
 
@@ -395,27 +409,39 @@ module.exports = function() {
 			if ( 'description' === key ) {
 				return;
 			}
-			it( `fails with malformed ${key}`, function() {
+			it( `fails with malformed ${key}`, function( done ) {
 				let badData = _.set( _.clone( data ), key, 'bad!' );
 				new AwardsEndpoint( null, 1 ).update( 1, badData )
-				.should.be.rejectedWith({ status: 400 });
+				.catch( err => {
+					err.should.be.an.Error();
+					done();
+				});
 			});
 		});
 
-		it( 'fails if negative prestige set without deduct action', function() {
+		it( 'fails if negative prestige set without deduct action', function( done ) {
 			new AwardsEndpoint( null, 1 ).update( 1, _.assign( {}, data, { general: -10 } ) )
-			.should.be.rejectedWith({ status: 400 });
+			.catch( err => {
+				err.should.be.an.Error();
+				done();
+			});
 		});
 
-		it( 'fails if saving with no prestige', function() {
+		it( 'fails if saving with no prestige', function( done ) {
 			new AwardsEndpoint( null, 1 ).update( 1, data )
-			.should.be.rejectedWith({ status: 400, message: 'No prestige awarded' });
+			.catch( err => {
+				err.should.be.an.Error();
+				done();
+			});
 		});
 
-		it( 'fails if trying to modify own approved award', function() {
+		it( 'fails if trying to modify own approved award', function( done ) {
 			let newData = Object.assign( {}, data, { general: 10 } );
 			new AwardsEndpoint( null, 2 ).update( 1, newData )
-			.should.be.rejectedWith( Error );
+			.catch( err => {
+				err.should.be.an.Error();
+				done();
+			});
 		});
 
 		it( 'works if trying to modify requested award', function( done ) {
@@ -554,6 +580,112 @@ module.exports = function() {
 				done();
 			});
 		});
+	});
+
+	describe( 'DELETE /v1/awards/{id}', function() {
+		beforeEach( 'reset data', resetDB );
+
+		it( 'throws when removing a non-existent award', function( done ) {
+			new AwardsEndpoint( null, 1 ).delete( 999 )
+			.catch( err => {
+				err.should.be.an.Error();
+				done();
+			});
+		});
+
+		it( 'throws when removing an already removed award', function( done ) {
+			new AwardsEndpoint( null, 1 ).delete( 5 )
+			.catch( err => {
+				err.should.be.an.Error();
+				done();
+			});
+		});
+
+		it( 'throws when removing with no offices', function( done ) {
+			new AwardsEndpoint( hub( 200, [] ), 3 ).delete( 1 )
+			.catch( err => {
+				err.should.be.an.Error();
+				done();
+			});
+		});
+
+		it( 'throws when removing without permission', function( done ) {
+
+			let hub = helpers.seriesHub([{ body: [{ id: 2 }] }, { statusCode: 403 }]);
+
+			new AwardsEndpoint( hub, 3 ).delete( 1 )
+			.catch( err => {
+				err.should.be.an.Error();
+				done();
+			});
+		});
+
+		it( 'works if requested by self', function( done ) {
+			new AwardsEndpoint( null, 1 ).delete( 3 )
+			.then( award => {
+				award.toJSON().should.have.property( 'status', 'Denied' );
+				done();
+			});
+		});
+
+		it( 'works if officer nominated and award still nominated', function( done ) {
+			new AwardModel({
+				id: 10,
+				user: 1,
+				categoryId: 1,
+				date: new Date( '2017-02-20' ),
+				status: 'Nominated',
+				nominate: 2
+			}).save( {}, { method: 'insert' } )
+			.then( () => {
+				new AwardsEndpoint( hub( 200, [{ id: 2 }] ), 3 ).delete( 10 )
+				.then( award => {
+					award.toJSON().should.have.property( 'status', 'Denied' );
+					done();
+				});
+			});
+		});
+
+		it( 'works if officer awarded', function( done ) {
+			new AwardModel({
+				id: 10,
+				user: 1,
+				categoryId: 1,
+				date: new Date( '2017-02-20' ),
+				status: 'Awarded',
+				awarder: 2
+			}).save( {}, { method: 'insert' } )
+			.then( () => {
+				new AwardsEndpoint( hub( 200, [{ id: 2 }] ), 3 ).delete( 10 )
+				.then( award => {
+					award.toJSON().should.have.property( 'status', 'Denied' );
+					done();
+				});
+			});
+		});
+
+		it( 'works if have correct role', function( done ) {
+			let hub = helpers.seriesHub(
+				[{ body: [{ id: 2 }] },
+				{ statusCode: 200 }]
+			);
+			new AwardsEndpoint( hub, 2 ).delete( 1 )
+			.then( award => {
+				award.toJSON().should.have.property( 'status', 'Denied' );
+				done();
+			});
+		});
+
+		it( 'updates DB to correct status', function( done ) {
+			new AwardsEndpoint( null, 1 ).delete( 3 )
+			.then( () => new AwardModel({ id: 3 }).fetch() )
+			.then( award => {
+				award.toJSON().should.have.property( 'status', 'Denied' );
+				done();
+			});
+		});
+
+		it( 'updated related MC reviews' );
 	});
 }
 

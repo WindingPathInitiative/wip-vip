@@ -20,7 +20,6 @@ module.exports = function() {
 		hub().request( '/v1/test' ).should.be.a.Promise().and.be.fulfilled();
 		hub().request( '/v1/test' ).then( body => {
 			body.should.have.property( 'message', 'Success' );
-			body.should.have.property( 'token', 'token' );
 			done();
 		});
 	});
