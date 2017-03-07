@@ -24,7 +24,7 @@ class CategoryEndpoint {
 	 * @return {Promise}
 	 */
 	get( filter ) {
-		_.defaults( filter, {
+		filter = _.defaults( filter, {
 			limit: 20,
 			offset: 0,
 			type: 'all'
@@ -40,7 +40,7 @@ class CategoryEndpoint {
 		}
 
 		if ( filter.date ) {
-			if ( NaN === Date.parse( filter.date ) ) {
+			if ( isNaN( Date.parse( filter.date ) ) ) {
 				return new Promise.reject( new RequestError( 'Invalid date' ) );
 			}
 			let date = new Date( filter.date );
@@ -58,7 +58,10 @@ class CategoryEndpoint {
 			limit: Math.min( filter.limit, 100 ),
 			offset: filter.offset
 		})
-		.then( categories => categories.toJSON() );
+		.then( categories => {
+			categories.each( category => category.showAll() );
+			return categories.toJSON();
+		});
 	}
 
 	/**

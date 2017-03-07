@@ -3,12 +3,19 @@
 const Bookshelf = require( '../helpers/db' ).Bookshelf;
 
 class CategoryModel extends Bookshelf.Model {
-	get tableName() {
-		return 'categories';
+
+	constructor( attributes, options ) {
+		super( attributes, options );
+		this.hidden = [ 'start', 'end', 'type' ];
 	}
 
-	get hidden() {
-		return [ 'start', 'end', 'type' ];
+	showAll() {
+		this.hidden = null;
+		return this;
+	}
+
+	get tableName() {
+		return 'categories';
 	}
 
 	awards() {
