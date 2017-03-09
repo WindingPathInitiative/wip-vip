@@ -349,8 +349,8 @@ class AwardsEndpoint {
 		data = _.clone( data );
 
 		let constraints = {
-			user: { presence: true, numericality: { onlyInteger: true } },
-			category: { presence: true, numericality: { onlyInteger: true } },
+			user: { presence: true, numericality: { onlyInteger: true, greaterThan: 0 } },
+			category: { presence: true, numericality: { onlyInteger: true, greaterThan: 0 } },
 			date: { presence: true, date: true },
 			action: { presence: true, inclusion: [ 'request', 'nominate', 'award', 'deduct' ] },
 			description: { presence: true },
