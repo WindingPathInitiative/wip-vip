@@ -21,10 +21,11 @@ exports.up = function( knex ) {
 		table.integer( 'general' ).defaultTo( 0 );
 		table.integer( 'regional' ).defaultTo( 0 );
 		table.integer( 'national' ).defaultTo( 0 );
+		table.integer( 'vip' ).index().defaultTo( 0 );
 		table.integer( 'usableGeneral' ).defaultTo( 0 );
 		table.integer( 'usableRegional' ).defaultTo( 0 );
 		table.integer( 'usableNational' ).defaultTo( 0 );
-		table.integer( 'vip' ).defaultTo( 0 );
+		table.integer( 'usableVip' ).defaultTo( 0 );
 	});
 };
 

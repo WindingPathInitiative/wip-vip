@@ -144,7 +144,7 @@ module.exports = function() {
 
 		let data = {
 			user: 2,
-			category: 1,
+			category: 6,
 			date: '2017-01-01',
 			description: 'Test Award'
 		};
@@ -173,15 +173,15 @@ module.exports = function() {
 			});
 		});
 
-		it( 'fails if negative prestige set without deduct action', function( done ) {
-			new VIPEndpoint( null, 1 ).create( _.assign( {}, data, { general: -10 } ) )
+		it( 'fails if negative vip set without deduct action', function( done ) {
+			new VIPEndpoint( null, 1 ).create( _.assign( {}, data, { vip: -10 } ) )
 			.catch( err => {
 				err.should.be.an.Error().and.be.an.instanceOf( errors.RequestError );
 				done();
 			});
 		});
 
-		it( 'fails if saving with no prestige', function( done ) {
+		it( 'fails if saving with no vip', function( done ) {
 			new VIPEndpoint( null, 1 ).create( data )
 			.catch( err => {
 				err.should.be.an.Error().and.be.an.instanceOf( errors.RequestError );
@@ -190,7 +190,7 @@ module.exports = function() {
 		});
 
 		it( 'sets action to request for self', function( done ) {
-			let newData = Object.assign( {}, data, { user: 'me', general: 10 } );
+			let newData = Object.assign( {}, data, { user: 'me', vip: 3 } );
 			new VIPEndpoint( null, 1 ).create( newData )
 			.then( award => {
 				award.should.have.property( 'status', 'Requested' );
@@ -199,7 +199,7 @@ module.exports = function() {
 		});
 
 		it( 'sets the user ID for requesting self', function( done ) {
-			let newData = Object.assign( {}, data, { user: 'me', general: 10 } );
+			let newData = Object.assign( {}, data, { user: 'me', vip: 3 } );
 			new VIPEndpoint( null, 1 ).create( newData )
 			.then( award => {
 				award.should.have.property( 'user', 1 );
@@ -208,58 +208,13 @@ module.exports = function() {
 		});
 
 		it( 'does not check permission for self', function( done ) {
-			let newData = Object.assign( {}, data, { general: 10 } );
+			let newData = Object.assign( {}, data, { vip: 3 } );
 			new VIPEndpoint( null, 2 ).create( newData )
 			.then( () => done() );
 		});
 
-		let levels = [ 'general', 'regional', 'national' ];
-		levels.forEach( level => {
-			let newHub = hub();
-			newHub.hasOverUser = ( user, roles ) => {
-				roles.should.containEql( newHub.action );
-				if ( 'award' === newHub.action ) {
-					roles.should.containEql( level );
-				}
-				return Promise.resolve( true );
-			};
-
-			it( `verifies correct role for ${level} nominations`, function( done ) {
-				let newData = Object.assign( {}, data );
-				newData[ level ] = 10;
-				newHub.action = 'nominate';
-				new VIPEndpoint( newHub, 1 ).create( newData )
-				.then( award => {
-					validateAward( award );
-					done();
-				});
-			});
-
-			it( `verifies correct role for ${level} awards`, function( done ) {
-				let newData = Object.assign( {}, data, { action: 'award' } );
-				newData[ level ] = 10;
-				newHub.action = newData.action;
-				new VIPEndpoint( newHub, 1 ).create( newData )
-				.then( award => {
-					validateAward( award );
-					done();
-				});
-			});
-
-			it( `verifies correct role for ${level} deducts`, function( done ) {
-				let newData = Object.assign( {}, data, { action: 'deduct' } );
-				newData[ level ] = -10;
-				newHub.action = newData.action;
-				new VIPEndpoint( newHub, 1 ).create( newData )
-				.then( award => {
-					validateAward( award );
-					done();
-				});
-			});
-		});
-
 		it( 'sets the correct status for nominations', function( done ) {
-			let newData = Object.assign( {}, data, { general: 10 } );
+			let newData = Object.assign( {}, data, { vip: 3 } );
 			new VIPEndpoint( hub(), 1 ).create( newData )
 			.then( award => {
 				award.should.have.property( 'status', 'Nominated' );
@@ -269,7 +224,7 @@ module.exports = function() {
 		});
 
 		it( 'sets the correct status for awards', function( done ) {
-			let newData = Object.assign( {}, data, { action: 'award', general: 10 } );
+			let newData = Object.assign( {}, data, { action: 'award', vip: 3 } );
 			new VIPEndpoint( hub(), 1 ).create( newData )
 			.then( award => {
 				award.should.have.property( 'status', 'Awarded' );
@@ -279,7 +234,7 @@ module.exports = function() {
 		});
 
 		it( 'sets the correct status for reductions', function( done ) {
-			let newData = Object.assign( {}, data, { action: 'deduct', general: -10 } );
+			let newData = Object.assign( {}, data, { action: 'deduct', vip: -10 } );
 			new VIPEndpoint( hub(), 1 ).create( newData )
 			.then( award => {
 				award.should.have.property( 'status', 'Awarded' );
@@ -289,7 +244,7 @@ module.exports = function() {
 		});
 
 		it( 'returns the correct data', function( done ) {
-			let newData = Object.assign( {}, data, { general: 10 } );
+			let newData = Object.assign( {}, data, { vip: 3 } );
 			new VIPEndpoint( hub(), 1 ).create( newData )
 			.then( award => {
 				validateAward( award );
@@ -304,7 +259,7 @@ module.exports = function() {
 		});
 
 		it( 'does not create an action on request', function( done ) {
-			let newData = Object.assign( {}, data, { general: 10 } );
+			let newData = Object.assign( {}, data, { vip: 3 } );
 			new VIPEndpoint( hub(), 2 ).create( newData )
 			.then( award => new ActionModel().where({ awardId: award.id }).fetchAll() )
 			.then( actions => {
@@ -314,7 +269,7 @@ module.exports = function() {
 		});
 
 		it( 'does create an action on nomination', function( done ) {
-			let newData = Object.assign( {}, data, { general: 10 } );
+			let newData = Object.assign( {}, data, { vip: 3 } );
 			new VIPEndpoint( hub(), 1 ).create( newData )
 			.then( award => new ActionModel().where({ awardId: award.id }).fetchAll() )
 			.then( actions => {
@@ -330,7 +285,7 @@ module.exports = function() {
 		});
 
 		it( 'does create an action on awarding', function( done ) {
-			let newData = Object.assign( {}, data, { general: 10, action: 'award' } );
+			let newData = Object.assign( {}, data, { vip: 3, action: 'award' } );
 			new VIPEndpoint( hub(), 1 ).create( newData )
 			.then( award => new ActionModel().where({ awardId: award.id }).fetchAll() )
 			.then( actions => {
@@ -352,14 +307,14 @@ module.exports = function() {
 
 		let data = {
 			user: 2,
-			category: 1,
+			category: 6,
 			date: '2017-01-01',
 			description: 'Test Award'
 		};
 
 		Object.keys( data ).forEach( key => {
 			it( `fails without providing ${key}`, function( done ) {
-				new VIPEndpoint( null, 1 ).update( 1, _.omit( data, key ) )
+				new VIPEndpoint( null, 1 ).update( 6, _.omit( data, key ) )
 				.catch( err => {
 					err.should.be.an.Error().and.be.an.instanceOf( errors.RequestError );
 					done();
@@ -373,7 +328,7 @@ module.exports = function() {
 			}
 			it( `fails with malformed ${key}`, function( done ) {
 				let badData = _.set( _.clone( data ), key, 'bad!' );
-				new VIPEndpoint( null, 1 ).update( 1, badData )
+				new VIPEndpoint( null, 1 ).update( 6, badData )
 				.catch( err => {
 					err.should.be.an.Error().and.be.an.instanceOf( errors.RequestError );
 					done();
@@ -382,7 +337,7 @@ module.exports = function() {
 		});
 
 		it( 'fails if negative prestige set without deduct action', function( done ) {
-			new VIPEndpoint( null, 1 ).update( 1, _.assign( {}, data, { general: -10 } ) )
+			new VIPEndpoint( null, 1 ).update( 6, _.assign( {}, data, { vip: -10 } ) )
 			.catch( err => {
 				err.should.be.an.Error().and.be.an.instanceOf( errors.RequestError );
 				done();
@@ -390,7 +345,7 @@ module.exports = function() {
 		});
 
 		it( 'fails if saving with no prestige', function( done ) {
-			new VIPEndpoint( null, 1 ).update( 1, data )
+			new VIPEndpoint( null, 1 ).update( 6, data )
 			.catch( err => {
 				err.should.be.an.Error().and.be.an.instanceOf( errors.RequestError );
 				done();
@@ -398,8 +353,8 @@ module.exports = function() {
 		});
 
 		it( 'fails if trying to modify own approved award', function( done ) {
-			let newData = Object.assign( {}, data, { general: 10 } );
-			new VIPEndpoint( null, 2 ).update( 1, newData )
+			let newData = Object.assign( {}, data, { vip: 3 } );
+			new VIPEndpoint( null, 2 ).update( 6, newData )
 			.catch( err => {
 				err.should.be.an.Error().and.be.an.instanceOf( errors.AuthError );
 				done();
@@ -407,67 +362,22 @@ module.exports = function() {
 		});
 
 		it( 'works if trying to modify requested award', function( done ) {
-			let newData = Object.assign( {}, data, { general: 10 } );
-			new VIPEndpoint( null, 2 ).update( 3, newData )
+			let newData = Object.assign( {}, data, { vip: 3 } );
+			new VIPEndpoint( null, 2 ).update( 7, newData )
 			.then( award => {
 				award.should.have.properties({
 					user: 2,
 					status: 'Requested',
-					general: 10,
-					usableGeneral: 10
+					vip: 3,
+					usableVip: 3
 				});
 				done();
 			});
 		});
 
-		let levels = [ 'general', 'regional', 'national' ];
-		levels.forEach( level => {
-			let newHub = hub();
-			newHub.hasOverUser = ( user, roles ) => {
-				roles.should.containEql( newHub.action );
-				if ( 'award' === newHub.action ) {
-					roles.should.containEql( level );
-				}
-				return Promise.resolve( true );
-			};
-
-			it( `verifies correct role for ${level} nominations`, function( done ) {
-				let newData = Object.assign( {}, data );
-				newData[ level ] = 10;
-				newHub.action = 'nominate';
-				new VIPEndpoint( newHub, 1 ).update( 1, newData )
-				.then( award => {
-					validateAward( award );
-					done();
-				});
-			});
-
-			it( `verifies correct role for ${level} awards`, function( done ) {
-				let newData = Object.assign( {}, data, { action: 'award' } );
-				newData[ level ] = 10;
-				newHub.action = newData.action;
-				new VIPEndpoint( newHub, 1 ).update( 1, newData )
-				.then( award => {
-					validateAward( award );
-					done();
-				});
-			});
-
-			it( `verifies correct role for ${level} deducts`, function( done ) {
-				let newData = Object.assign( {}, data, { action: 'deduct' } );
-				newData[ level ] = -10;
-				newHub.action = newData.action;
-				new VIPEndpoint( newHub, 1 ).update( 1, newData )
-				.then( award => {
-					validateAward( award );
-					done();
-				});
-			});
-		});
-
 		it( 'sets the correct status for nominations', function( done ) {
-			let newData = Object.assign( {}, data, { general: 10 } );
-			new VIPEndpoint( hub(), 1 ).update( 1, newData )
+			let newData = Object.assign( {}, data, { vip: 3 } );
+			new VIPEndpoint( hub(), 1 ).update( 6, newData )
 			.then( award => {
 				award.should.have.property( 'status', 'Nominated' );
 				award.should.have.property( 'nominate', 1 );
@@ -476,8 +386,8 @@ module.exports = function() {
 		});
 
 		it( 'sets the correct status for awards', function( done ) {
-			let newData = Object.assign( {}, data, { action: 'award', general: 10 } );
-			new VIPEndpoint( hub(), 1 ).update( 1, newData )
+			let newData = Object.assign( {}, data, { action: 'award', vip: 3 } );
+			new VIPEndpoint( hub(), 1 ).update( 6, newData )
 			.then( award => {
 				award.should.have.property( 'status', 'Awarded' );
 				award.should.have.property( 'awarder', 1 );
@@ -486,8 +396,8 @@ module.exports = function() {
 		});
 
 		it( 'sets the correct status for reductions', function( done ) {
-			let newData = Object.assign( {}, data, { action: 'deduct', general: -10 } );
-			new VIPEndpoint( hub(), 1 ).update( 1, newData )
+			let newData = Object.assign( {}, data, { action: 'deduct', vip: -10 } );
+			new VIPEndpoint( hub(), 1 ).update( 6, newData )
 			.then( award => {
 				award.should.have.property( 'status', 'Awarded' );
 				award.should.have.property( 'awarder', 1 );
@@ -496,8 +406,8 @@ module.exports = function() {
 		});
 
 		it( 'returns the correct data', function( done ) {
-			let newData = Object.assign( {}, data, { general: 10 } );
-			new VIPEndpoint( hub(), 1 ).update( 1, newData )
+			let newData = Object.assign( {}, data, { vip: 3 } );
+			new VIPEndpoint( hub(), 1 ).update( 6, newData )
 			.then( award => {
 				validateAward( award );
 				let testObj = _.merge( newData, {
@@ -511,8 +421,8 @@ module.exports = function() {
 		});
 
 		it( 'does create an action on nomination', function( done ) {
-			let newData = Object.assign( {}, data, { general: 10 } );
-			new VIPEndpoint( hub(), 1 ).update( 1, newData )
+			let newData = Object.assign( {}, data, { vip: 3 } );
+			new VIPEndpoint( hub(), 1 ).update( 6, newData )
 			.then( award => new ActionModel().where({ awardId: award.id }).fetchAll() )
 			.then( actions => {
 				actions.toJSON().should.have.length( 2 );
@@ -527,8 +437,8 @@ module.exports = function() {
 		});
 
 		it( 'does create an action on awarding', function( done ) {
-			let newData = Object.assign( {}, data, { general: 10, action: 'award' } );
-			new VIPEndpoint( hub(), 1 ).update( 3, newData )
+			let newData = Object.assign( {}, data, { vip: 3, action: 'award' } );
+			new VIPEndpoint( hub(), 1 ).update( 7, newData )
 			.then( award => new ActionModel().where({ awardId: award.id }).fetchAll() )
 			.then( actions => {
 				actions.toJSON().should.have.length( 1 );
@@ -557,7 +467,7 @@ module.exports = function() {
 		});
 
 		it( 'throws when removing an already removed award', function( done ) {
-			new VIPEndpoint( null, 1 ).delete( 5 )
+			new VIPEndpoint( null, 1 ).delete( 9 )
 			.catch( err => {
 				err.should.be.an.Error().and.be.an.instanceOf( errors.RequestError );
 				done();
@@ -565,7 +475,7 @@ module.exports = function() {
 		});
 
 		it( 'throws when removing with no offices', function( done ) {
-			new VIPEndpoint( hub( 200, [] ), 3 ).delete( 1 )
+			new VIPEndpoint( hub( 200, [] ), 3 ).delete( 6 )
 			.catch( err => {
 				err.should.be.an.Error().and.be.an.instanceOf( errors.AuthError );
 				done();
@@ -576,7 +486,7 @@ module.exports = function() {
 
 			let hub = helpers.seriesHub([{ body: [{ id: 2 }] }, { statusCode: 403 }]);
 
-			new VIPEndpoint( hub, 3 ).delete( 1 )
+			new VIPEndpoint( hub, 3 ).delete( 6 )
 			.catch( err => {
 				err.should.be.an.Error().and.be.an.instanceOf( errors.AuthError );
 				done();
@@ -584,7 +494,7 @@ module.exports = function() {
 		});
 
 		it( 'works if requested by self', function( done ) {
-			new VIPEndpoint( null, 1 ).delete( 3 )
+			new VIPEndpoint( null, 1 ).delete( 7 )
 			.then( award => {
 				award.should.have.property( 'status', 'Removed' );
 				done();
@@ -598,7 +508,8 @@ module.exports = function() {
 				categoryId: 1,
 				date: new Date( '2017-02-20' ),
 				status: 'Nominated',
-				nominate: 2
+				nominate: 2,
+				vip: 1
 			}).save( {}, { method: 'insert' } )
 			.then( () => {
 				new VIPEndpoint( hub( 200, [{ id: 2 }] ), 3 ).delete( 10 )
@@ -616,7 +527,8 @@ module.exports = function() {
 				categoryId: 1,
 				date: new Date( '2017-02-20' ),
 				status: 'Awarded',
-				awarder: 2
+				awarder: 2,
+				vip: 1
 			}).save( {}, { method: 'insert' } )
 			.then( () => {
 				new VIPEndpoint( hub( 200, [{ id: 2 }] ), 3 ).delete( 10 )
@@ -632,7 +544,7 @@ module.exports = function() {
 				[{ body: [{ id: 2 }] },
 				{ statusCode: 200 }]
 			);
-			new VIPEndpoint( hub, 2 ).delete( 1 )
+			new VIPEndpoint( hub, 2 ).delete( 6 )
 			.then( award => {
 				award.should.have.property( 'status', 'Removed' );
 				done();
@@ -640,8 +552,8 @@ module.exports = function() {
 		});
 
 		it( 'updates DB to correct status', function( done ) {
-			new VIPEndpoint( null, 1 ).delete( 3 )
-			.then( () => new AwardModel({ id: 3 }).fetch() )
+			new VIPEndpoint( null, 1 ).delete( 7 )
+			.then( () => new AwardModel({ id: 7 }).fetch() )
 			.then( award => {
 				award.toJSON().should.have.property( 'status', 'Removed' );
 				done();
@@ -653,11 +565,11 @@ module.exports = function() {
 				[{ body: [{ id: 2 }] },
 				{ statusCode: 200, body: { offices: [{ id: 1 }] } }]
 			);
-			new VIPEndpoint( hub, 2 ).delete( 1, 'Test note' )
+			new VIPEndpoint( hub, 2 ).delete( 6, 'Test note' )
 			.then( () => new ActionModel().where({ action: 'Removed' }).fetch() )
 			.then( action => {
 				action.toJSON().should.have.properties({
-					awardId: 1,
+					awardId: 6,
 					office: 1,
 					user: 2,
 					action: 'Removed',
@@ -675,7 +587,8 @@ function validateAward( award ) {
 	award.should.have.properties([
 		'id', 'description', 'source', 'date', 'modified',
 		'nominate', 'awarder', 'general', 'regional',
-		'national', 'usableGeneral', 'usableRegional', 'usableNational', 'vip'
+		'national', 'vip', 'usableGeneral',
+		'usableRegional', 'usableNational', 'usableVip'
 	]);
 	award.should.have.property( 'category' ).have.properties([
 		'name', 'totalLimit', 'entryLimit'

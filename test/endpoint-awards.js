@@ -31,7 +31,7 @@ module.exports = function() {
 			new AwardsEndpoint( null, 1 )
 			.get({})
 			.then( awards => {
-				awards.should.be.an.Array().and.have.length( 3 );
+				awards.should.be.an.Array().and.have.length( 5 );
 				awards.forEach( validateAward );
 				done();
 			});
@@ -53,7 +53,7 @@ module.exports = function() {
 			new AwardsEndpoint( hub(), 1 )
 			.get({ status: 'all' })
 			.then( awards => {
-				awards.should.be.an.Array().and.have.length( 5 );
+				awards.should.be.an.Array().and.have.length( 9 );
 				awards.forEach( validateAward );
 				done();
 			});
@@ -63,7 +63,7 @@ module.exports = function() {
 			new AwardsEndpoint( null, 2 )
 			.get({ dateBefore: '2017-02-21' })
 			.then( awards => {
-				awards.should.be.an.Array().and.have.length( 1 );
+				awards.should.be.an.Array().and.have.length( 2 );
 				awards.forEach( validateAward );
 				done();
 			});
@@ -73,7 +73,7 @@ module.exports = function() {
 			new AwardsEndpoint( null, 2 )
 			.get({ dateAfter: '2017-02-21' })
 			.then( awards => {
-				awards.should.be.an.Array().and.have.length( 2 );
+				awards.should.be.an.Array().and.have.length( 3 );
 				awards.forEach( validateAward );
 				done();
 			});
@@ -144,7 +144,7 @@ module.exports = function() {
 			new AwardsEndpoint( null, 1 )
 			.getMember( 'me', { status: 'all' } )
 			.then( awards => {
-				awards.should.be.an.Array().and.have.length( 3 );
+				awards.should.be.an.Array().and.have.length( 5 );
 				awards.forEach( validateAward );
 				done();
 			});
@@ -154,7 +154,7 @@ module.exports = function() {
 			new AwardsEndpoint( null, 1 )
 			.getMember( 1, { status: 'all' } )
 			.then( awards => {
-				awards.should.be.an.Array().and.have.length( 3 );
+				awards.should.be.an.Array().and.have.length( 5 );
 				awards.forEach( validateAward );
 				done();
 			});
@@ -164,7 +164,7 @@ module.exports = function() {
 			new AwardsEndpoint( null, 2 )
 			.getMember( 1, {} )
 			.then( awards => {
-				awards.should.be.an.Array().and.have.length( 2 );
+				awards.should.be.an.Array().and.have.length( 3 );
 				awards.forEach( validateAward );
 				done();
 			});
@@ -186,7 +186,7 @@ module.exports = function() {
 			new AwardsEndpoint( hub(), 2 )
 			.getMember( 1, { status: 'all' } )
 			.then( awards => {
-				awards.should.be.an.Array().and.have.length( 3 );
+				awards.should.be.an.Array().and.have.length( 5 );
 				awards.forEach( validateAward );
 				done();
 			});
@@ -196,7 +196,7 @@ module.exports = function() {
 			new AwardsEndpoint( null, 2 )
 			.getMember( 1, { dateBefore: '2017-02-21' } )
 			.then( awards => {
-				awards.should.be.an.Array().and.have.length( 1 );
+				awards.should.be.an.Array().and.have.length( 2 );
 				awards.forEach( validateAward );
 				done();
 			});
