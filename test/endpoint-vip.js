@@ -26,7 +26,7 @@ module.exports = function() {
 		});
 	});
 
-	describe( 'GET /v1/awards', function() {
+	describe( 'GET /v1/vip', function() {
 		it( 'returns awards for default status', function( done ) {
 			new VIPEndpoint( null, 1 )
 			.get({})
@@ -90,7 +90,7 @@ module.exports = function() {
 		});
 	});
 
-	describe( 'GET /v1/awards/{id}', function() {
+	describe( 'GET /v1/vip/{id}', function() {
 
 		it( 'throws if award does not exist', function( done ) {
 			new VIPEndpoint( null, 1 )
@@ -138,7 +138,7 @@ module.exports = function() {
 		});
 	});
 
-	describe( 'POST /v1/awards', function() {
+	describe( 'POST /v1/vip', function() {
 
 		beforeEach( 'reset data', resetDB );
 
@@ -301,7 +301,7 @@ module.exports = function() {
 		});
 	});
 
-	describe( 'PUT /v1/awards/{id}', function() {
+	describe( 'PUT /v1/vip/{id}', function() {
 
 		beforeEach( 'reset data', resetDB );
 
@@ -455,7 +455,7 @@ module.exports = function() {
 		it( 'updates related MC reviews' );
 	});
 
-	describe( 'DELETE /v1/awards/{id}', function() {
+	describe( 'DELETE /v1/vip/{id}', function() {
 		beforeEach( 'reset data', resetDB );
 
 		it( 'throws when removing a non-existent award', function( done ) {
