@@ -23,6 +23,7 @@ class AwardsEndpoint {
 		this.Hub    = hub;
 		this.userId = user;
 		this.levels = [ 'general', 'regional', 'national'  ];
+		this.type   = 'prestige';
 		return this;
 	}
 
@@ -43,7 +44,7 @@ class AwardsEndpoint {
 		if (  'Awarded' === filters.status ) {
 			promise = Promise.resolve();
 		} else {
-			promise = this.Hub.hasOverOrgUnit( 1, 'prestige_view' );
+			promise = this.Hub.hasOverOrgUnit( 1, this.role( 'view' ) );
 		}
 
 		// Get the data.
@@ -59,7 +60,7 @@ class AwardsEndpoint {
 	 * @return {Promise}
 	 */
 	getOne( id ) {
-		return new AwardModel({ id: id })
+		return this.query({ id: id })
 		.fetch({ require: true, withRelated: [ 'category', 'document' ] })
 		.catch( () => {
 			throw new NotFoundError();
@@ -71,7 +72,7 @@ class AwardsEndpoint {
 			) {
 				return null;
 			}
-			return this.Hub.hasOverUser( award.get( 'user' ), 'prestige_view' );
+			return this.Hub.hasOverUser( award.get( 'user' ), this.role( 'view' ) );
 		})
 		.then( award => award.toJSON() );
 	}
@@ -99,7 +100,7 @@ class AwardsEndpoint {
 		) {
 			promise = Promise.resolve( true );
 		} else {
-			promise = this.Hub.hasOverUser( user, 'prestige_view' );
+			promise = this.Hub.hasOverUser( user, this.role( 'view' ) );
 		}
 
 		// Get the data.
@@ -121,7 +122,7 @@ class AwardsEndpoint {
 			if ( 'request' === data.action ) {
 				return;
 			}
-			let role = `prestige_${data.action}`;
+			let role = this.role( data.action );
 			if ( 'award' === data.action ) {
 				role += `_${data.level}`;
 			}
@@ -167,7 +168,7 @@ class AwardsEndpoint {
 				officeId = 0;
 				return;
 			}
-			let role = `prestige_${data.action}`;
+			let role = this.role( data.action );
 			if ( 'award' === data.action ) {
 				role += `_${data.level}`;
 			}
@@ -183,7 +184,7 @@ class AwardsEndpoint {
 		})
 		.then( data => _.omit( data, [ 'action', 'level' ] ) );
 
-		let get = new AwardModel({ id: id })
+		let get = this.query({ id: id })
 		.fetch({ require: true })
 		.catch( () => {
 			throw new NotFoundError();
@@ -217,7 +218,7 @@ class AwardsEndpoint {
 	 */
 	delete( id, note ) {
 		let officeId;
-		return new AwardModel({ id: id })
+		return this.query({ id: id })
 		.fetch({ require: true, withRelated: [ 'category', 'document' ] })
 		.catch( () => {
 			throw new NotFoundError();
@@ -258,7 +259,7 @@ class AwardsEndpoint {
 			return promise
 			.then( result => {
 				if ( ! result ) {
-					return this.Hub.hasOverUser( award.get( 'user' ), 'prestige_deduct' )
+					return this.Hub.hasOverUser( award.get( 'user' ), this.role( 'deduct' ) )
 					.then( id => {
 						officeId = id;
 						return award;
@@ -278,6 +279,26 @@ class AwardsEndpoint {
 
 
 	/**
+	 * Gets a new Award model.
+	 * @param {Object} map Optional. Map of inital values.
+	 * @return {AwardModel}
+	 */
+	query( map ) {
+		return new AwardModel( map );
+	}
+
+
+	/**
+	 * Gets a role name.
+	 * @param {String} type The role type.
+	 * @return {String}
+	 */
+	role( type ) {
+		return `prestige_${type}`;
+	}
+
+
+	/**
 	 * Filters a group of awards.
 	 * @param {Object}     filter The filter object.
 	 * @param {AwardModel} query  Optional. The Bookshelf Award model.
@@ -285,7 +306,7 @@ class AwardsEndpoint {
 	 */
 	filterAwards( filter, query ) {
 		if ( ! query ) {
-			query = new AwardModel();
+			query = this.query();
 		}
 
 		filter = _.defaults( filter, {
@@ -414,6 +435,7 @@ class AwardsEndpoint {
 
 		// Checks if the category exists.
 		return new CategoryModel({ id: data.category })
+		.where( 'type', this.type )
 		.where( 'start', '<', data.date )
 		.query( qb => {
 			qb.where( function() {
