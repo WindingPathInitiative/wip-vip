@@ -14,4 +14,6 @@ describe( 'User Hub', require( './helper-hub' ) );
 
 describe( 'Awards', require( './endpoint-awards' ) );
 
+describe( 'VIP', require( './endpoint-vip' ) );
+
 describe( 'Categories', require( './endpoint-categories' ) );
