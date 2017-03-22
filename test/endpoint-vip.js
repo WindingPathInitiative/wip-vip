@@ -59,6 +59,18 @@ module.exports = function() {
 			});
 		});
 
+		it( 'checks both prestige and vip roles', function( done ) {
+			let newHub = hub();
+			newHub.hasOverOrgUnit = ( unit, roles ) => {
+				roles.should.be.an.Array().and.containDeep([ 'prestige_view', 'vip_view' ]);
+				return Promise.resolve( true );
+			};
+
+			new VIPEndpoint( newHub, 1 )
+			.get({ status: 'all' })
+			.then( () => done() );
+		});
+
 		it( 'can filter by before date', function( done ) {
 			new VIPEndpoint( null, 2 )
 			.get({ dateBefore: '2017-02-21' })
@@ -135,6 +147,18 @@ module.exports = function() {
 				validateAward( award );
 				done();
 			});
+		});
+
+		it( 'checks both prestige and vip roles', function( done ) {
+			let newHub = hub();
+			newHub.hasOverUser = ( user, roles ) => {
+				roles.should.be.an.Array().and.containDeep([ 'prestige_view', 'vip_view' ]);
+				return Promise.resolve( true );
+			};
+
+			new VIPEndpoint( newHub, 2 )
+			.getOne( 7 )
+			.then( () => done() );
 		});
 	});
 
@@ -213,6 +237,19 @@ module.exports = function() {
 			.then( () => done() );
 		});
 
+		it( 'checks both prestige and vip roles for nominations', function( done ) {
+			let newHub = hub();
+			newHub.hasOverUser = ( user, roles ) => {
+				roles.should.be.an.Array().and.containDeep([ 'prestige_nominate', 'vip_nominate' ]);
+				return Promise.resolve( true );
+			};
+
+			let newData = Object.assign( {}, data, { vip: 3 } );
+
+			new VIPEndpoint( newHub, 1 ).create( newData )
+			.then( () => done() );
+		});
+
 		it( 'sets the correct status for nominations', function( done ) {
 			let newData = Object.assign( {}, data, { vip: 3 } );
 			new VIPEndpoint( hub(), 1 ).create( newData )
@@ -221,6 +258,18 @@ module.exports = function() {
 				award.should.have.property( 'nominate', 1 );
 				done();
 			});
+		});
+
+		it( 'checks both prestige and vip roles for awards', function( done ) {
+			let newHub = hub();
+			newHub.hasOverUser = ( user, roles ) => {
+				roles.should.be.an.Array().and.containDeep([ 'prestige_award', 'vip_award' ]);
+				return Promise.resolve( true );
+			};
+
+			let newData = Object.assign( {}, data, { action: 'award', vip: 3 } );
+			new VIPEndpoint( newHub, 1 ).create( newData )
+			.then( () => done() );
 		});
 
 		it( 'sets the correct status for awards', function( done ) {
@@ -375,6 +424,18 @@ module.exports = function() {
 			});
 		});
 
+		it( 'checks both prestige and vip roles', function( done ) {
+			let newHub = hub();
+			newHub.hasOverUser = ( user, roles ) => {
+				roles.should.be.an.Array().and.containDeep([ 'prestige_nominate', 'vip_nominate' ]);
+				return Promise.resolve( true );
+			};
+
+			let newData = Object.assign( {}, data, { vip: 3 } );
+			new VIPEndpoint( newHub, 1 ).update( 6, newData )
+			.then( () => done() );
+		});
+
 		it( 'sets the correct status for nominations', function( done ) {
 			let newData = Object.assign( {}, data, { vip: 3 } );
 			new VIPEndpoint( hub(), 1 ).update( 6, newData )
@@ -383,6 +444,18 @@ module.exports = function() {
 				award.should.have.property( 'nominate', 1 );
 				done();
 			});
+		});
+
+		it( 'checks both prestige and vip roles', function( done ) {
+			let newHub = hub();
+			newHub.hasOverUser = ( user, roles ) => {
+				roles.should.be.an.Array().and.containDeep([ 'prestige_award', 'vip_award' ]);
+				return Promise.resolve( true );
+			};
+
+			let newData = Object.assign( {}, data, { action: 'award', vip: 3 } );
+			new VIPEndpoint( newHub, 1 ).update( 6, newData )
+			.then( () => done() );
 		});
 
 		it( 'sets the correct status for awards', function( done ) {

@@ -123,7 +123,7 @@ class AwardsEndpoint {
 				return;
 			}
 			let role = this.role( data.action );
-			if ( 'award' === data.action ) {
+			if ( 'award' === data.action && data.level ) {
 				role += `_${data.level}`;
 			}
 			return this.Hub.hasOverUser( data.user, role )
@@ -169,7 +169,7 @@ class AwardsEndpoint {
 				return;
 			}
 			let role = this.role( data.action );
-			if ( 'award' === data.action ) {
+			if ( 'award' === data.action && data.level ) {
 				role += `_${data.level}`;
 			}
 			return this.Hub.hasOverUser( data.user, role )
@@ -456,7 +456,9 @@ class AwardsEndpoint {
 				if ( data[ level ] ) {
 					let cur = data[ key ] || data[ level ];
 					data[ key ] = Math.min( category.entryLimit, cur );
-					data.level = level;
+					if ( 'vip' !== level ) {
+						data.level = level;
+					}
 				}
 			});
 
