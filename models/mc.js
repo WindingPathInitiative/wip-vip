@@ -7,7 +7,7 @@ class MembershipClassModel extends Bookshelf.Model {
 		return 'mc';
 	}
 
-	award() {
+	awards() {
 		return this.hasMany( 'Award', 'mcReviewId' );
 	}
 

@@ -4,6 +4,8 @@ const _ = require( 'lodash' );
 
 const MembershipClassModel = require( '../models/mc' );
 
+const NotFoundError = require( '../helpers/errors' ).NotFoundError;
+
 class MembershipClassEndpoint {
 
 	/**
@@ -42,6 +44,30 @@ class MembershipClassEndpoint {
 		return promise
 		.then( () => this.filter( filters ) )
 		.then( levels => levels.map( level => level.restrict().toJSON() ) );
+	}
+
+
+	/**
+	 * Gets an individual class.
+	 * @param {Number} id The class ID.
+	 * @return {Promise}
+	 */
+	getOne( id ) {
+		return new MembershipClassModel({ id: id })
+		.fetch({ require: true, withRelated: 'awards' })
+		.catch( () => {
+			throw new NotFoundError();
+		})
+		.tap( cls => {
+			if (
+				'Approved' === cls.get( 'status' ) ||
+				Number.parseInt( cls.get( 'user' ) ) === this.userId
+			) {
+				return null;
+			}
+			return this.Hub.hasOverUser( cls.get( 'user' ), this.role([ 'request', 'approve', 'revoke' ]) );
+		})
+		.then( cls => cls.toJSON() );
 	}
 
 
@@ -119,6 +145,16 @@ class MembershipClassEndpoint {
 				return new MembershipClassEndpoint( req.hub, req.user )
 				.get( req.query )
 				.then( classes => res.json({ results: classes }) )
+				.catch( err => next( err ) );
+			}
+		);
+
+		router.get( '/:id(\\d+)',
+			hub,
+			( req, res, next ) => {
+				return new MembershipClassEndpoint( req.hub, req.user )
+				.getOne( req.params.id )
+				.then( cls => res.json( cls ) )
 				.catch( err => next( err ) );
 			}
 		);

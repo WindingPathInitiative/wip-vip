@@ -102,6 +102,61 @@ module.exports = function() {
 			.then( () => done() );
 		});
 	});
+
+	describe( 'GET /v1/mc/{id}', function() {
+
+		it( 'throws if award does not exist', function( done ) {
+			new MembershipClassEndpoint( null, 1 )
+			.getOne( 100 )
+			.catch( err => {
+				err.should.be.an.Error().and.an.instanceOf( errors.NotFoundError );
+				done();
+			});
+		});
+
+		it( 'returns an approved award without permission', function( done ) {
+			new MembershipClassEndpoint( null, 2 )
+			.getOne( 1 )
+			.then( award => {
+				validateClass( award );
+				done();
+			});
+		});
+
+		it( 'returns a non-approved award if it\' for the user', function( done ) {
+			new MembershipClassEndpoint( null, 2 )
+			.getOne( 2 )
+			.then( award => {
+				validateClass( award );
+				done();
+			});
+		});
+
+		it( 'throws if non-approved and does not have permission', function( done ) {
+			new MembershipClassEndpoint( hub( 403 ), 1 )
+			.getOne( 2 )
+			.catch( err => {
+				err.should.be.an.Error().and.an.instanceOf( errors.AuthError );
+				done();
+			});
+		});
+
+		it( 'returns a non-approved award and has permission', function( done ) {
+			new MembershipClassEndpoint( hub(), 2 )
+			.getOne( 2 )
+			.then( award => {
+				validateClass( award );
+				done();
+			});
+		});
+
+		it( 'checks the correct roles', function( done ) {
+			let roles = [ 'mc_request', 'mc_approve', 'mc_revoke' ]
+			new MembershipClassEndpoint( helpers.roleHub( null, null, roles ), 1 )
+			.getOne( 2 )
+			.then( () => done() );
+		});
+	});
 }
 
 function validateBulkClass( cls ) {
@@ -110,7 +165,8 @@ function validateBulkClass( cls ) {
 	]);
 }
 
-function validateClass( cls ) { // eslint-disable-line no-unused-vars
+function validateClass( cls ) {
 	validateBulkClass( cls );
 	cls.should.have.properties([ 'general', 'regional', 'national', 'currentLevel', 'office' ]);
+	cls.should.have.property( 'awards' ).and.be.an.Array();
 }
