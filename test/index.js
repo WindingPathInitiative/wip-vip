@@ -17,3 +17,5 @@ describe( 'Awards', require( './endpoint-awards' ) );
 describe( 'VIP', require( './endpoint-vip' ) );
 
 describe( 'Categories', require( './endpoint-categories' ) );
+
+describe( 'Membership Class', require( './endpoint-mc' ) );

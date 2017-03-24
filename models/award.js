@@ -23,7 +23,7 @@ class AwardModel extends Bookshelf.Model {
 	}
 
 	mc() {
-		return this.belongsTo( 'MC', 'mc' );
+		return this.belongsTo( 'MembershipClass', 'mc' );
 	}
 
 	category() {

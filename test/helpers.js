@@ -34,6 +34,18 @@ function seriesHub( responses ) {
 module.exports.seriesHub = seriesHub;
 
 
+function roleHub( status, body, testRoles ) {
+	let hub = getHub( status, body );
+	hub.roles = ( roles ) => {
+		roles = new Hub().roles( roles );
+		roles.should.be.a.String().and.equal( testRoles.join( ',' ) );
+		return roles;
+	}
+	return hub;
+}
+module.exports.roleHub = roleHub;
+
+
 function resetDB( done ) {
 	let knex = require( '../helpers/db' );
 	knex.seed.run().then( () => done() );

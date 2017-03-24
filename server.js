@@ -11,6 +11,7 @@ app.use( require( 'morgan' )( 'dev' ) );
 app.use( '/v1/awards/', require( './endpoints/awards' ).route() );
 app.use( '/v1/vip/', require( './endpoints/vip' ).route() );
 app.use( '/v1/categories/', require( './endpoints/categories' ).route() );
+app.use( '/v1/mc/', require( './endpoints/mc' ).route() );
 
 app.get( '/', ( req, res ) => {
 	let version = require( './package.json' ).version;
