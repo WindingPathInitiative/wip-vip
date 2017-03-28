@@ -29,6 +29,23 @@ class AwardModel extends Bookshelf.Model {
 	category() {
 		return this.belongsTo( CategoryModel, 'categoryId' );
 	}
+
+	static getUserTotals( user ) {
+		return new AwardModel().where({ user: user, status: 'Awarded' })
+		.fetchAll()
+		.then( awards => {
+			return awards.toJSON().reduce(
+				( acc, val ) => {
+					acc.general += val.usableGeneral;
+					acc.regional += val.usableRegional;
+					acc.national += val.usableNational;
+					acc.total += ( val.usableGeneral + val.usableRegional + val.usableNational );
+					return acc;
+				},
+				{ general: 0, regional: 0, national: 0, total: 0 }
+			);
+		});
+	}
 }
 
 module.exports = Bookshelf.model( 'Award', AwardModel );

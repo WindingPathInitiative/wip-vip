@@ -1,10 +1,14 @@
 'use strict';
 
-const _ = require( 'lodash' );
+const _       = require( 'lodash' );
+const Promise = require( 'bluebird' );
 
 const MembershipClassModel = require( '../models/mc' );
+const AwardModel           = require( '../models/award' );
+const ActionModel          = require( '../models/action' );
 
 const NotFoundError = require( '../helpers/errors' ).NotFoundError;
+const RequestError  = require( '../helpers/errors' ).RequestError;
 
 class MembershipClassEndpoint {
 
@@ -14,9 +18,10 @@ class MembershipClassEndpoint {
 	 * @param {Number} user The user ID.
 	 * @return {MembershipClassEndpoint}
 	 */
-	constructor( hub, user ) {
+	constructor( hub, user, levels ) {
 		this.Hub    = hub;
 		this.userId = user;
+		this.levels = levels;
 		return this;
 	}
 
@@ -70,6 +75,97 @@ class MembershipClassEndpoint {
 		.then( cls => cls.toJSON() );
 	}
 
+
+	/**
+	 * Creates a MC request
+	 * @param {Number} userId User ID to request MC for.
+	 * @param {Number} level  Level to request.
+	 * @return {Promise}
+	 */
+	create( userId, level ) {
+		let promise, officeId;
+
+		level = Number.parseInt( level );
+
+		if ( 1 === level ) {
+			return Promise.reject( new RequestError( 'All members have MC 1' ) );
+		}
+
+		let levelData = this.levels[ level ];
+		if ( ! Number.parseInt( level ) || ! levelData ) {
+			return Promise.reject( new RequestError( 'Invalid level' ) );
+		}
+
+		if ( userId !== this.userId && 15 !== level ) {
+			promise = this.Hub.hasOverUser( userId, this.role( 'request' ) )
+			.then( id => {
+				officeId = id;
+			});
+		} else {
+			promise = Promise.resolve();
+		}
+
+		return promise
+		.then( () => new MembershipClassModel()
+			.where( 'user', userId )
+			.where( 'level', '>=', level )
+			.orderBy( 'level', 'DESC' )
+			.fetch()
+		).then( cls => {
+			if ( cls && cls.get( 'level' ) === level ) {
+				throw new RequestError( `User already has level at ID ${cls.id}` );
+			} else if ( cls ) {
+				throw new RequestError( 'User already is higher level' );
+			}
+			return AwardModel.getUserTotals( userId );
+		})
+		.tap( totals => {
+
+			if ( 15 === level ) {
+				return;
+			}
+
+			if (
+				levelData.national > totals.national ||
+				levelData.regional > ( totals.regional + totals.national ) ||
+				levelData.general > totals.total
+			) {
+				throw new RequestError( 'User does not have needed prestige' );
+			}
+		})
+		.then( totals => new MembershipClassModel({
+			user: userId,
+			date: new Date(),
+			level: level,
+			general: totals.general,
+			regional: totals.regional,
+			national: totals.national,
+			status: 'Requested',
+			currentLevel: 'Domain',
+			office: officeId || 0
+		}).save() )
+		.tap( cls => new AwardModel()
+			.where({ user: userId, mcReviewId: null, status: 'Awarded', vip: null })
+			.fetchAll()
+			.then( awards => awards.invokeThen( 'save', 'mcReviewId', cls.id ) )
+		)
+		.tap( cls => {
+			if ( officeId ) {
+				return this.createAction( cls, officeId, 'Nominated' );
+			}
+		})
+		.tap( cls => cls.related( 'awards' ).fetch() )
+		.then( cls => cls.toJSON() );
+	}
+
+
+	/**
+	 * Returns the level data.
+	 * @return {Object}
+	 */
+	getLevels() {
+		return this.levels;
+	}
 
 
 	/**
@@ -133,16 +229,38 @@ class MembershipClassEndpoint {
 
 
 	/**
+	 * Creates and saves an action.
+	 * @param {MembershipClassModel} award    The award.
+	 * @param {Number}               officeId Officer ID.
+	 * @param {String}               action   Optional. The action to save.
+	 * @param {String}               note     Optional. The note to save.
+	 * @param {Object}               prev     Optional. Previous data.
+	 * @return {ActionModel}
+	 */
+	createAction( cls, officeId, action, note, prev ) {
+		return new ActionModel({
+			mcId: cls.get( 'id' ),
+			office: officeId,
+			user: this.userId,
+			action: action || cls.get( 'status' ),
+			previous: prev || {},
+			note: note
+		}).save();
+	}
+
+
+	/**
 	 * Express routing helper.
 	 */
 	static route() {
 		let router = require( 'express' ).Router();
 		let hub    = require( '../helpers/hub' ).route;
+		let levels = require( '../membership-classes' );
 
 		router.get( '/',
 			hub,
 			( req, res, next ) => {
-				return new MembershipClassEndpoint( req.hub, req.user )
+				return new MembershipClassEndpoint( req.hub, req.user, levels )
 				.get( req.query )
 				.then( classes => res.json({ results: classes }) )
 				.catch( err => next( err ) );
@@ -152,8 +270,25 @@ class MembershipClassEndpoint {
 		router.get( '/:id(\\d+)',
 			hub,
 			( req, res, next ) => {
-				return new MembershipClassEndpoint( req.hub, req.user )
+				return new MembershipClassEndpoint( req.hub, req.user, levels )
 				.getOne( req.params.id )
+				.then( cls => res.json( cls ) )
+				.catch( err => next( err ) );
+			}
+		);
+
+		router.get( '/levels',
+			hub,
+			( req, res ) => {
+				res.json( new MembershipClassEndpoint( req.hub, req.user, levels ).getLevels() );
+			}
+		);
+
+		router.post( '/',
+			hub,
+			( req, res, next ) => {
+				return new MembershipClassEndpoint( req.hub, req.user, levels )
+				.create( req.query.user, req.query.level )
 				.then( cls => res.json( cls ) )
 				.catch( err => next( err ) );
 			}

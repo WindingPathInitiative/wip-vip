@@ -1,5 +1,7 @@
 'use strict';
 
+const Promise = require( 'bluebird' );
+
 const Hub = require( '../helpers/hub' );
 
 function getHub( status, body ) {
@@ -36,6 +38,9 @@ module.exports.seriesHub = seriesHub;
 
 function roleHub( status, body, testRoles ) {
 	let hub = getHub( status, body );
+	if ( 'array' !== typeof testRoles ) {
+		testRoles = [ testRoles ];
+	}
 	hub.roles = ( roles ) => {
 		roles = new Hub().roles( roles );
 		roles.should.be.a.String().and.equal( testRoles.join( ',' ) );

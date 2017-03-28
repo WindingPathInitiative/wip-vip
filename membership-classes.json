@@ -1,0 +1,107 @@
+{
+	"1": {
+		"name": "Associate",
+		"general": 0,
+		"regional": 0,
+		"national": 0,
+		"officer": "domain"
+	},
+	"2": {
+		"name": "Journeyman",
+		"general": 100,
+		"regional": 0,
+		"national": 0,
+		"officer": "domain"
+	},
+	"3": {
+		"name": "Artisan",
+		"general": 300,
+		"regional": 0,
+		"national": 0,
+		"officer": "domain"
+	},
+	"4": {
+		"name": "Contributor",
+		"general": 600,
+		"regional": 0,
+		"national": 0,
+		"officer": "domain"
+	},
+	"5": {
+		"name": "Sponsor",
+		"general": 1000,
+		"regional": 0,
+		"national": 0,
+		"officer": "domain"
+	},
+	"6": {
+		"name": "Steward",
+		"general": 1500,
+		"regional": 0,
+		"national": 0,
+		"officer": "domain"
+	},
+	"7": {
+		"name": "Benefactor",
+		"general": 2100,
+		"regional": 0,
+		"national": 0,
+		"officer": "domain"
+	},
+	"8": {
+		"name": "Advocate",
+		"general": 2700,
+		"regional": 0,
+		"national": 0,
+		"officer": "domain"
+	},
+	"9": {
+		"name": "Adviser",
+		"general": 3400,
+		"regional": 100,
+		"national": 0,
+		"officer": "regional"
+	},
+	"10": {
+		"name": "Patron",
+		"general": 4100,
+		"regional": 300,
+		"national": 0,
+		"officer": "regional"
+	},
+	"11": {
+		"name": "Mentor",
+		"general": 4800,
+		"regional": 600,
+		"national": 0,
+		"officer": "regional"
+	},
+	"12": {
+		"name": "Luminary",
+		"general": 5400,
+		"regional": 900,
+		"national": 100,
+		"officer": "national"
+	},
+	"13": {
+		"name": "Executive",
+		"general": 6100,
+		"regional": 1200,
+		"national": 300,
+		"officer": "national"
+	},
+	"14": {
+		"name": "Fellow",
+		"general": 6900,
+		"regional": 1500,
+		"national": 800,
+		"officer": "national"
+	},
+	"15": {
+		"name": "Trustee",
+		"general": 0,
+		"regional": 0,
+		"national": 0,
+		"officer": "national"
+	}
+}
