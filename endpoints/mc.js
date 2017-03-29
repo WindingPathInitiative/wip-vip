@@ -225,6 +225,42 @@ class MembershipClassEndpoint {
 
 
 	/**
+	 * Sets an award to be removed.
+	 * @param {Number} id   ID of membership class.
+	 * @param {String} note Optional. Notes about removal.
+	 * @return {Promise}
+	 */
+	remove( id, note ) {
+		let officeId, prev;
+
+		return new MembershipClassModel({ id: id })
+		.fetch({ require: true })
+		.catch( () => {
+			throw new NotFoundError();
+		})
+		.tap( cls => {
+			let status = cls.get( 'status' );
+			if ( 'Removed' === status ) {
+				throw new RequestError( 'Review is already removed' );
+			}
+
+			prev = cls.toJSON();
+
+			return this.Hub.hasOverUser( cls.get( 'user' ), this.role( 'revoke' ) )
+			.then( id => {
+				officeId = id;
+			});
+		})
+		.then( cls => cls.save( 'status', 'Removed' ) )
+		.tap( cls => this.createAction( cls, officeId, 'Removed', note, prev ) )
+		.tap( cls => cls.related( 'awards' ).fetchAll()
+			.then( awards => awards.invokeThen( 'save', { mcReviewId: null } ) )
+		)
+		.then( cls => cls.toJSON() );
+	}
+
+
+	/**
 	 * Returns the level data.
 	 * @return {Object}
 	 */
@@ -368,6 +404,16 @@ class MembershipClassEndpoint {
 				.catch( err => next( err ) );
 			}
 		);
+
+		router.del( '/:id(\\d+)',
+			hub,
+			( req, res, next ) => {
+				return new MembershipClassEndpoint( req.hub, req.user )
+				.remove( req.params.id, req.body.note )
+				.then( cls => res.json( cls ) )
+				.catch( err => next( err ) );
+			}
+		)
 
 		return router;
 	}

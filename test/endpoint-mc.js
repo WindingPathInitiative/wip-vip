@@ -13,6 +13,7 @@ const MembershipClassEndpoint = require( '../endpoints/mc' );
 
 const MembershipClassModel = require( '../models/mc' );
 const ActionModel          = require( '../models/action' );
+const AwardModel           = require( '../models/award' );
 
 const errors = require( '../helpers/errors' );
 
@@ -300,7 +301,7 @@ module.exports = function() {
 			});
 		});
 
-		it( 'throws when award does not exist', function( done ) {
+		it( 'throws when review does not exist', function( done ) {
 			new MembershipClassEndpoint( null, 1, {} )
 			.approve( 100, 'domain' )
 			.catch( err => {
@@ -309,7 +310,7 @@ module.exports = function() {
 			});
 		});
 
-		it( 'throws when award is already approved', function( done ) {
+		it( 'throws when review is already approved', function( done ) {
 			new MembershipClassEndpoint( null, 1, {} )
 			.approve( 1, 'national' )
 			.catch( err => {
@@ -318,7 +319,7 @@ module.exports = function() {
 			});
 		});
 
-		it( 'throws when award is removed', function( done ) {
+		it( 'throws when review is removed', function( done ) {
 			new MembershipClassEndpoint( null, 1, {} )
 			.approve( 3, 'regional' )
 			.catch( err => {
@@ -327,7 +328,7 @@ module.exports = function() {
 			});
 		});
 
-		it( 'throws when award is not at correct level', function( done ) {
+		it( 'throws when review is not at correct level', function( done ) {
 			new MembershipClassEndpoint( null, 1, {} )
 			.approve( 2, 'regional' )
 			.catch( err => {
@@ -384,6 +385,17 @@ module.exports = function() {
 			});
 		});
 
+		it( 'updates awards in database', function( done ) {
+			let levels = { '2': { officer: 'domain' } };
+			new MembershipClassEndpoint( hub(), 1, levels )
+			.approve( 2, 'domain' )
+			.then( () => new AwardModel({ mcReviewId: 2 }).fetchAll() )
+			.then( cls => {
+				cls.length.should.be.greaterThan( 0 );
+				done();
+			});
+		});
+
 		it( 'creates action in database on reviewing', function( done ) {
 			let levels = { '2': { officer: 'regional' } };
 			new MembershipClassEndpoint( hub(), 1, levels )
@@ -417,6 +429,22 @@ module.exports = function() {
 				done();
 			});
 		});
+	});
+
+	describe( 'DELETE /v1/mc/{id}', function() {
+		it( 'throws when review does not exist' );
+
+		it( 'throws when review is already removed' );
+
+		it( 'checks role for removing review' );
+
+		it( 'sets status to removed' );
+
+		it( 'updates the database for review' );
+
+		it( 'updates the database for awards' );
+
+		it( 'creates action in database' );
 	});
 
 	describe( 'GET /v1/mc/levels', function() {
