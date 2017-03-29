@@ -26,5 +26,17 @@ exports.seed = function( knex ) {
 			currentLevel: 'Domain',
 			office: 8
 		},
+		{
+			id: 3,
+			user: 2,
+			date: new Date( '2017-02-30' ),
+			level: 10,
+			general: 0,
+			regional: 0,
+			national: 0,
+			status: 'Removed',
+			currentLevel: 'Regional',
+			office: 0
+		}
 	]) );
 };

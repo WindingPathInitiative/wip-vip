@@ -3,6 +3,7 @@
 /* eslint-env node, mocha */
 
 const should = require( 'should' ); // eslint-disable-line no-unused-vars
+const _      = require( 'lodash' );
 
 const helpers = require( './helpers' );
 const resetDB = helpers.resetDB;
@@ -281,6 +282,138 @@ module.exports = function() {
 			.then( cls => new ActionModel().where({ mcId: cls.id }).fetchAll() )
 			.then( actions => {
 				actions.toJSON().should.have.length( 0 );
+				done();
+			});
+		});
+	});
+
+	describe( 'PUT /v1/mc/{id}', function() {
+
+		beforeEach( 'reset data', resetDB );
+
+		it( 'throws when invalid level specified', function( done ) {
+			new MembershipClassEndpoint( null, 1, {} )
+			.approve( 2, 'test' )
+			.catch( err => {
+				err.should.be.an.Error().and.an.instanceOf( errors.RequestError );
+				done();
+			});
+		});
+
+		it( 'throws when award does not exist', function( done ) {
+			new MembershipClassEndpoint( null, 1, {} )
+			.approve( 100, 'domain' )
+			.catch( err => {
+				err.should.be.an.Error().and.an.instanceOf( errors.NotFoundError );
+				done();
+			});
+		});
+
+		it( 'throws when award is already approved', function( done ) {
+			new MembershipClassEndpoint( null, 1, {} )
+			.approve( 1, 'national' )
+			.catch( err => {
+				err.should.be.an.Error().and.an.instanceOf( errors.RequestError );
+				done();
+			});
+		});
+
+		it( 'throws when award is removed', function( done ) {
+			new MembershipClassEndpoint( null, 1, {} )
+			.approve( 3, 'regional' )
+			.catch( err => {
+				err.should.be.an.Error().and.an.instanceOf( errors.RequestError );
+				done();
+			});
+		});
+
+		it( 'throws when award is not at correct level', function( done ) {
+			new MembershipClassEndpoint( null, 1, {} )
+			.approve( 2, 'regional' )
+			.catch( err => {
+				err.should.be.an.Error().and.an.instanceOf( errors.RequestError );
+				done();
+			});
+		});
+
+		[ 'domain', 'regional', 'national' ].forEach( function( level ) {
+			let levels = { '2': { officer: 'national' } };
+			it( `checks roles for approving at ${level}`, function( done ) {
+				let newHub = helpers.roleHub( null, null, `mc_approve_${level}` );
+				new MembershipClassModel({ id: 2 }).fetch()
+				.then( cls => cls.save( 'currentLevel', _.upperFirst( level ) ) )
+				.then( () => new MembershipClassEndpoint( newHub, 1, levels ).approve( 2, level ) )
+				.then( () => done() );
+			});
+		});
+
+		it( 'sets status to reviewing when more levels', function( done ) {
+			let levels = { '2': { officer: 'regional' } };
+			new MembershipClassEndpoint( hub(), 1, levels )
+			.approve( 2, 'domain' )
+			.then( cls => {
+				cls.should.have.property( 'status', 'Reviewing' );
+				cls.should.have.property( 'currentLevel', 'Regional' );
+				done();
+			});
+		});
+
+		it( 'sets status to approved when final level', function( done ) {
+			let levels = { '2': { officer: 'domain' } };
+			new MembershipClassEndpoint( hub(), 1, levels )
+			.approve( 2, 'domain' )
+			.then( cls => {
+				cls.should.have.property( 'status', 'Approved' );
+				cls.should.have.property( 'currentLevel', 'Domain' );
+				done();
+			});
+		});
+
+		it( 'updates row in database', function( done ) {
+			let levels = { '2': { officer: 'domain' } };
+			new MembershipClassEndpoint( hub(), 1, levels )
+			.approve( 2, 'domain' )
+			.then( () => new MembershipClassModel({ id: 2 }).fetch() )
+			.then( cls => {
+				cls.toJSON().should.have.properties({
+					'status': 'Approved',
+					'currentLevel': 'Domain',
+					'id': 2
+				});
+				done();
+			});
+		});
+
+		it( 'creates action in database on reviewing', function( done ) {
+			let levels = { '2': { officer: 'regional' } };
+			new MembershipClassEndpoint( hub(), 1, levels )
+			.approve( 2, 'domain' )
+			.then( () => new ActionModel().where({ mcId: 2 }).fetchAll() )
+			.then( actions => {
+				actions.toJSON().should.have.length( 1 );
+				let action = actions.at( 0 ).toJSON();
+				action.should.have.properties({
+					action: 'Modified',
+					user: 1,
+					office: 1
+				});
+				done();
+			});
+		});
+
+		it( 'creates action in database on approval', function( done ) {
+			let levels = { '2': { officer: 'domain' } };
+			new MembershipClassEndpoint( hub(), 1, levels )
+			.approve( 2, 'domain' )
+			.then( () => new ActionModel().where({ mcId: 2 }).fetchAll() )
+			.then( actions => {
+				actions.toJSON().should.have.length( 1 );
+				let action = actions.at( 0 ).toJSON();
+				action.should.have.properties({
+					action: 'Awarded',
+					user: 1,
+					office: 1
+				});
 				done();
 			});
 		});

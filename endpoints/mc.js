@@ -109,6 +109,7 @@ class MembershipClassEndpoint {
 		.then( () => new MembershipClassModel()
 			.where( 'user', userId )
 			.where( 'level', '>=', level )
+			.where( 'status', '<>', 'Removed' )
 			.orderBy( 'level', 'DESC' )
 			.fetch()
 		).then( cls => {
@@ -142,7 +143,7 @@ class MembershipClassEndpoint {
 			national: totals.national,
 			status: 'Requested',
 			currentLevel: 'Domain',
-			office: officeId || 0
+			office: 0
 		}).save() )
 		.tap( cls => new AwardModel()
 			.where({ user: userId, mcReviewId: null, status: 'Awarded', vip: null })
@@ -153,6 +154,70 @@ class MembershipClassEndpoint {
 			if ( officeId ) {
 				return this.createAction( cls, officeId, 'Nominated' );
 			}
+		})
+		.tap( cls => cls.related( 'awards' ).fetch() )
+		.then( cls => cls.toJSON() );
+	}
+
+
+	/**
+	 * Approves an award at a given level.
+	 * @param {Number} id    ID of award to approve.
+	 * @param {String} level Level to approve at.
+	 * @param {String} note  Optional. Note to save as part of action.
+	 * @return {Promise}
+	 */
+	approve( id, level, note ) {
+		let levels = [ 'domain', 'regional', 'national' ];
+		if ( -1 === levels.indexOf( level ) ) {
+			return Promise.reject( new RequestError( 'Invalid level specified' ) );
+		}
+
+		let officeId, prev;
+
+		return new MembershipClassModel({ id: id })
+		.fetch({ require: true })
+		.catch( () => {
+			throw new NotFoundError();
+		})
+		.tap( cls => {
+			let status = cls.get( 'status' );
+			if ( 'Approved' === status ) {
+				throw new RequestError( 'Award already approved' );
+			} else if ( 'Removed' === status ) {
+				throw new RequestError( 'Award is removed' );
+			} else if ( level !== cls.get( 'currentLevel' ).toLowerCase() ) {
+				throw new RequestError( `Award is not at ${level} level` );
+			}
+
+			return this.Hub.hasOverUser( cls.get( 'user' ), this.role( `approve_${level}` ) )
+			.then( id => {
+				officeId = id;
+			});
+		})
+		.then( cls => {
+			prev = cls.toJSON();
+
+			let levelData = this.levels[ cls.get( 'level' ) ];
+			let status = 'Reviewing';
+
+			if ( 'national' === level || levelData.officer === level ) {
+				status = 'Approved';
+				cls.set( 'office', officeId );
+			} else {
+				let newLevel = levels[ levels.indexOf( level ) + 1 ];
+				cls.set( 'currentLevel', _.upperFirst( newLevel ) );
+			}
+
+			cls.set( 'status', status );
+			return cls.save();
+		})
+		.tap( cls => {
+			let action = 'Modified';
+			if ( 'Approved' === cls.get( 'status' ) ) {
+				action = 'Awarded';
+			}
+			return this.createAction( cls, officeId, action, note, prev );
 		})
 		.tap( cls => cls.related( 'awards' ).fetch() )
 		.then( cls => cls.toJSON() );
@@ -289,6 +354,16 @@ class MembershipClassEndpoint {
 			( req, res, next ) => {
 				return new MembershipClassEndpoint( req.hub, req.user, levels )
 				.create( req.query.user, req.query.level )
+				.then( cls => res.json( cls ) )
+				.catch( err => next( err ) );
+			}
+		);
+
+		router.put( '/:id(\\d+)',
+			hub,
+			( req, res, next ) => {
+				return new MembershipClassEndpoint( req.hub, req.user, levels )
+				.approve( req.params.id, req.query.level, req.body.note )
 				.then( cls => res.json( cls ) )
 				.catch( err => next( err ) );
 			}
