@@ -524,8 +524,6 @@ module.exports = function() {
 				done();
 			});
 		});
-
-		it( 'updates related MC reviews' );
 	});
 
 	describe( 'DELETE /v1/vip/{id}', function() {
@@ -650,9 +648,7 @@ module.exports = function() {
 				});
 				done();
 			});
-		})
-
-		it( 'updates related MC reviews' );
+		});
 	});
 }
 

@@ -22,8 +22,8 @@ class AwardModel extends Bookshelf.Model {
 		return this.hasMany( 'Action', 'awardId' );
 	}
 
-	mc() {
-		return this.belongsTo( 'MembershipClass', 'mc' );
+	review() {
+		return this.belongsTo( 'MembershipClass', 'mcReviewId' );
 	}
 
 	category() {

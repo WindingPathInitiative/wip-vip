@@ -155,11 +155,12 @@ class AwardsEndpoint {
 
 	/**
 	 * Updates an award.
-	 * @param {Number} id   ID of award of update.
-	 * @param {Object} data Data to update.
+	 * @param {Number} id     ID of award of update.
+	 * @param {Object} data   Data to update.
+	 * @param {Object} levels Optional. MC levels.
 	 * @return {Promise}
 	 */
-	update( id, data ) {
+	update( id, data, levels ) {
 		let officeId;
 		let validate = this.validateAward( data )
 		.tap( data => {
@@ -185,10 +186,14 @@ class AwardsEndpoint {
 		.then( data => _.omit( data, [ 'action', 'level' ] ) );
 
 		let get = this.query({ id: id })
-		.fetch({ require: true })
+		.fetch({ require: true, withRelated: [ 'review' ] })
 		.catch( () => {
 			throw new NotFoundError();
 		});
+
+		if ( ! levels ) {
+			levels = require( '../membership-classes' );
+		}
 
 		return Promise.join(
 			validate, get,
@@ -201,8 +206,22 @@ class AwardsEndpoint {
 				if ( valid.status !== model.get( 'status' ) ) {
 					action = valid.status;
 				}
+				if ( model.get( 'mcReviewId' ) ) {
+					if (
+						( valid.usableGeneral && valid.usableGeneral !== prev.usableGeneral ) ||
+						( valid.usableRegional && valid.usableRegional !== prev.usableRegional ) ||
+						( valid.usableNational && valid.usableNational !== prev.usableNational )
+					) {
+						valid.mcReviewId = null;
+					}
+				}
 				return this.createAction( model, officeId, action, data.note, prev )
-				.then( () => model.save( valid ) );
+				.then( () => model.save( valid ) )
+				.tap( () => {
+					if ( prev.review && prev.review.id && null === valid.mcReviewId ) {
+						return model.related( 'review' ).reset( levels );
+					}
+				});
 			}
 		)
 		.then( award => award.refresh({ withRelated: [ 'category', 'document' ] }) )
@@ -214,10 +233,16 @@ class AwardsEndpoint {
 	 * Deletes an award.
 	 * @param {Number} id   ID of award to remove.
 	 * @param {String} note Optional. Note to attach to removal.
+	 * @param {Object} levels Optional. MC levels.
 	 * @return {Promise}
 	 */
-	delete( id, note ) {
-		let officeId;
+	delete( id, note, levels ) {
+		let officeId, mcReviewId;
+
+		if ( ! levels ) {
+			levels = require( '../membership-classes' );
+		}
+
 		return this.query({ id: id })
 		.fetch({ require: true, withRelated: [ 'category', 'document' ] })
 		.catch( () => {
@@ -269,11 +294,19 @@ class AwardsEndpoint {
 			});
 		})
 		.tap( award => {
+			mcReviewId = award.get( 'mcReviewId' );
 			if ( officeId ) {
 				return this.createAction( award, officeId, 'Removed', note, award.toJSON() );
 			}
 		})
-		.then( award => award.save( 'status', 'Removed', { patch: true } ) )
+		.then( award => award.save( { status: 'Removed', mcReviewId: null }, { patch: true } ) )
+		.tap( () => {
+			if ( mcReviewId ) {
+				let MembershipClassModel = require( '../models/mc' );
+				return new MembershipClassModel({ id: mcReviewId }).fetch()
+				.then( review => review.reset( levels ) );
+			}
+		})
 		.then( award => award.toJSON() );
 	}
 

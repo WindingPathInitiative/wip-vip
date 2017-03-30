@@ -195,6 +195,23 @@ class MembershipClassEndpoint {
 				officeId = id;
 			});
 		})
+		.tap( cls => {
+
+			let data      = cls.toJSON();
+			let levelData = this.levels[ data.level ];
+
+			if ( 15 === data.level ) {
+				return;
+			}
+
+			if (
+				levelData.national > data.national ||
+				levelData.regional > ( data.regional + data.national ) ||
+				levelData.general > ( data.general + data.regional + data.national )
+			) {
+				throw new RequestError( 'User does not have needed prestige' );
+			}
+		})
 		.then( cls => {
 			prev = cls.toJSON();
 
@@ -405,7 +422,7 @@ class MembershipClassEndpoint {
 			}
 		);
 
-		router.del( '/:id(\\d+)',
+		router.delete( '/:id(\\d+)',
 			hub,
 			( req, res, next ) => {
 				return new MembershipClassEndpoint( req.hub, req.user )

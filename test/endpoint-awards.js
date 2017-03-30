@@ -13,6 +13,7 @@ const AwardsEndpoint = require( '../endpoints/awards' );
 
 const AwardModel = require( '../models/award' );
 const ActionModel = require( '../models/action' );
+const MembershipClassModel = require( '../models/mc' );
 
 const errors = require( '../helpers/errors' );
 
@@ -627,7 +628,52 @@ module.exports = function() {
 			});
 		});
 
-		it( 'updates related MC reviews' );
+		const addReview = function( id, review ) {
+			return new AwardModel({ id: id || 1 }).fetch()
+			.then( award => award.save( 'mcReviewId', review || 1 ) );
+		}
+
+		it( 'does not update review when amounts do not change', function( done ) {
+			let newData = Object.assign( {}, data, { general: 50 } );
+			addReview()
+			.then( () => new AwardsEndpoint( hub(), 1 ).update( 1, newData ) )
+			.then( () => new AwardModel({ id: 1 }).fetch({ withRelated: 'review' }) )
+			.then( award => {
+				award.related( 'review' ).should.have.property( 'id' );
+				done();
+			});
+		});
+
+		it( 'removes review when amounts change and resets review', function( done ) {
+			let newData = Object.assign( {}, data, { general: 10 } );
+			let newLevels = { '14': { general: 20, regional: 0, national: 0 } };
+			addReview()
+			.then( () => new AwardsEndpoint( hub(), 1 ).update( 1, newData, newLevels ) )
+			.then( () => new AwardModel({ id: 1 }).fetch({ withRelated: 'review' }) )
+			.then( award => {
+				award.related( 'review' ).should.not.have.property( 'id' );
+				return new MembershipClassModel({ id: 1 }).fetch();
+			})
+			.then( review => {
+				review.toJSON().should.have.properties({
+					status: 'Requested',
+					currentLevel: 'Domain'
+				});
+				done();
+			});
+		});
+
+		it( 'removes review if not enough prestige', function( done ) {
+			let newData = Object.assign( {}, data, { general: 10 } );
+			addReview()
+			.then( () => new AwardsEndpoint( hub(), 1 ).update( 1, newData ) )
+			.then( () => new AwardModel({ id: 1 }).fetch() )
+			.then( () => new MembershipClassModel({ id: 1 }).fetch() )
+			.then( review => {
+				review.toJSON().should.have.property( 'status', 'Removed' );
+				done();
+			});
+		});
 	});
 
 	describe( 'DELETE /v1/awards/{id}', function() {
@@ -752,7 +798,47 @@ module.exports = function() {
 			});
 		})
 
-		it( 'updates related MC reviews' );
+		const addReview = function() {
+			return new AwardModel({ id: 1 }).fetch()
+			.then( award => award.save( 'mcReviewId', 1 ) );
+		}
+
+		it( 'resets review when prestige is enough', function( done ) {
+			let hub = helpers.seriesHub([
+				{ body: [{ id: 2 }] },
+				{ statusCode: 200, body: { offices: [{ id: 1 }] } }
+			]);
+			let newLevels = { '14': { general: 20, regional: 0, national: 0 } };
+			addReview()
+			.then( () => new AwardsEndpoint( hub, 2 ).delete( 1, null, newLevels ) )
+			.then( () => new AwardModel({ id: 1 }).fetch({ withRelated: 'review' }) )
+			.then( award => {
+				award.related( 'review' ).should.not.have.property( 'id' );
+				return new MembershipClassModel({ id: 1 }).fetch();
+			})
+			.then( review => {
+				review.toJSON().should.have.properties({
+					status: 'Requested',
+					currentLevel: 'Domain'
+				});
+				done();
+			});
+		});
+
+		it( 'removes review if not enough prestige', function( done ) {
+			let hub = helpers.seriesHub([
+				{ body: [{ id: 2 }] },
+				{ statusCode: 200, body: { offices: [{ id: 1 }] } }
+			]);
+			addReview()
+			.then( () => new AwardsEndpoint( hub, 2 ).delete( 1 ) )
+			.then( () => new AwardModel({ id: 1 }).fetch() )
+			.then( () => new MembershipClassModel({ id: 1 }).fetch() )
+			.then( review => {
+				review.toJSON().should.have.property( 'status', 'Removed' );
+				done();
+			});
+		});
 	});
 }
 
