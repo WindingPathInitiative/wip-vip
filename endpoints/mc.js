@@ -253,7 +253,7 @@ class MembershipClassEndpoint {
 		})
 		.then( cls => cls.save( 'status', 'Removed' ) )
 		.tap( cls => this.createAction( cls, officeId, 'Removed', note, prev ) )
-		.tap( cls => cls.related( 'awards' ).fetchAll()
+		.tap( cls => cls.related( 'awards' ).fetch()
 			.then( awards => awards.invokeThen( 'save', { mcReviewId: null } ) )
 		)
 		.then( cls => cls.toJSON() );

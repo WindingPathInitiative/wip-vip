@@ -432,19 +432,83 @@ module.exports = function() {
 	});
 
 	describe( 'DELETE /v1/mc/{id}', function() {
-		it( 'throws when review does not exist' );
 
-		it( 'throws when review is already removed' );
+		beforeEach( 'reset data', resetDB );
 
-		it( 'checks role for removing review' );
+		it( 'throws when review does not exist', function( done ) {
+			new MembershipClassEndpoint()
+			.remove( 100 )
+			.catch( err => {
+				err.should.be.an.Error().and.instanceOf( errors.NotFoundError );
+				done();
+			});
 
-		it( 'sets status to removed' );
+		});
 
-		it( 'updates the database for review' );
+		it( 'throws when review is already removed', function( done ) {
+			new MembershipClassEndpoint()
+			.remove( 3 )
+			.catch( err => {
+				err.should.be.an.Error().and.instanceOf( errors.RequestError );
+				done();
+			});
+		});
 
-		it( 'updates the database for awards' );
+		it( 'checks role for removing review', function( done ) {
+			let newHub = helpers.roleHub( null, null, 'mc_revoke' );
+			new MembershipClassEndpoint( newHub, 1 )
+			.remove( 1 )
+			.then( () => done() );
+		});
 
-		it( 'creates action in database' );
+		it( 'sets status to removed', function( done ) {
+			new MembershipClassEndpoint( hub(), 1 )
+			.remove( 1 )
+			.then( cls => {
+				cls.should.have.property( 'status', 'Removed' );
+				done();
+			});
+		});
+
+		it( 'updates the database for review', function( done ) {
+			new MembershipClassEndpoint( hub(), 1 )
+			.remove( 1 )
+			.then( () => new MembershipClassModel({ id: 1 }).fetch() )
+			.then( cls => {
+				cls.toJSON().should.have.property( 'status', 'Removed' );
+				done();
+			});
+		});
+
+		it( 'updates the database for awards', function( done ) {
+			let getAwards = () => new AwardModel().where({ user: 1, vip: null }).fetchAll();
+
+			getAwards()
+			.then( awards => awards.invokeThen( 'save', 'mcReviewId', 1 ) )
+			.then( () => new MembershipClassEndpoint( hub(), 1 ).remove( 1 ) )
+			.then( () => getAwards() )
+			.then( awards => {
+				awards.pluck( 'mcReviewId' ).should.matchEach( null )
+				.and.have.length( awards.length );
+				done();
+			});
+		});
+
+		it( 'creates action in database', function( done ) {
+			new MembershipClassEndpoint( hub(), 1 )
+			.remove( 1 )
+			.then( () => new ActionModel().where({ mcId: 1 }).fetchAll() )
+			.then( actions => {
+				actions.toJSON().should.have.length( 1 );
+				let action = actions.at( 0 ).toJSON();
+				action.should.have.properties({
+					action: 'Removed',
+					user: 1,
+					office: 1
+				});
+				done();
+			});
+		});
 	});
 
 	describe( 'GET /v1/mc/levels', function() {
