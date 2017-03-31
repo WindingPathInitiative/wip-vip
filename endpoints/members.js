@@ -3,7 +3,10 @@
 const _       = require( 'lodash' );
 const Promise = require( 'bluebird' );
 
-const AwardModel    = require( '../models/award' );
+const AwardModel           = require( '../models/award' );
+const MembershipClassModel = require( '../models/mc' );
+
+const NotFoundError = require( '../helpers/errors' ).NotFoundError;
 
 class MembersEndpoint {
 	/**
@@ -19,55 +22,36 @@ class MembersEndpoint {
 	}
 
 
-	/**
-	 * Gets prestige awards for a member.
-	 * @param {String|Number} user    The user ID.
-	 * @param {Object}        filters Filter object.
-	 * @return {Promise}
-	 */
-	prestige( user, filters ) {
-		// Sets the default filter data.
-		if ( ! _.has( filters, 'status' ) ) {
-			filters.status = 'Awarded';
-		}
-		filters.user = user;
-		filters.type = 'prestige';
-
-		// Check for public or personal information, otherwise do a role check.
-		let promise;
-		if (
-			'Awarded' === filters.status ||
-			'me' === user ||
-			Number.parseInt( user ) === this.userId
-		) {
-			promise = Promise.resolve( true );
-		} else {
-			promise = this.Hub.hasOverUser( user, 'prestige_view' );
+	info( user ) {
+		if ( 'me' === user ) {
+			user = this.userId;
 		}
 
-		// Get the data.
-		return promise
-		.then( () => this.filterAwards( filters ) )
-		.then( awards => ({
-			results: awards.toJSON(),
-			pagination: awards.pagination
-		}) );
+		return Promise.join(
+			AwardModel.getUserTotals( user ),
+			AwardModel.getUserVip( user ),
+			MembershipClassModel.getUserLevel( user ),
+			( prestige, vip, mc ) => ({ prestige: prestige, vip: vip, membershipClass: mc })
+		);
 	}
 
 
 	/**
-	 * Gets VIP awards for a member.
+	 * Gets prestige awards for a member.
 	 * @param {String|Number} user    The user ID.
 	 * @param {Object}        filters Filter object.
+	 * @param {String}        type    Type of award to get.
 	 * @return {Promise}
 	 */
-	vip( user, filters ) {
+	get( user, filters, type ) {
 		// Sets the default filter data.
 		if ( ! _.has( filters, 'status' ) ) {
 			filters.status = 'Awarded';
 		}
 		filters.user = user;
-		filters.type = 'vip';
+		if ( type ) {
+			filters.type = type;
+		}
 
 		// Check for public or personal information, otherwise do a role check.
 		let promise;
@@ -78,7 +62,11 @@ class MembersEndpoint {
 		) {
 			promise = Promise.resolve( true );
 		} else {
-			promise = this.Hub.hasOverUser( user, 'vip_view' );
+			let role = 'prestige_view';
+			if ( 'vip' === type ) {
+				role = [ 'vip_view', 'prestige_view' ];
+			}
+			promise = this.Hub.hasOverUser( user, role );
 		}
 
 		// Get the data.
@@ -112,11 +100,10 @@ class MembersEndpoint {
 			query.where( 'status', filter.status );
 		}
 
-		let falsey = 'testing' === process.env.NODE_ENV ? null : 0; // Use null for SQLite.
 		if ( 'prestige' === filter.type ) {
-			query.where( 'vip', falsey );
+			query.wherePrestige();
 		} else if ( 'vip' === filter.type ) {
-			query.where( 'vip', '<>', falsey );
+			query.whereVip();
 		}
 
 		if ( filter.user ) {
@@ -165,21 +152,41 @@ class MembersEndpoint {
 		let router = require( 'express' ).Router();
 		let hub    = require( '../helpers/hub' ).route;
 
-		router.get( '/:user/prestige',
+		router.get( '/:user(\\d+|me)',
 			hub,
 			( req, res, next ) => {
 				return new MembersEndpoint( req.hub, req.user )
-				.prestige( req.params.user, req.query )
+				.info( req.params.user )
+				.then( results => res.json( results ) )
+				.catch( err => next( err ) );
+			}
+		)
+
+		router.get( '/:user(\\d+|me)/awards',
+			hub,
+			( req, res, next ) => {
+				return new MembersEndpoint( req.hub, req.user )
+				.get( req.params.user, req.query )
 				.then( results => res.json( results ) )
 				.catch( err => next( err ) );
 			}
 		);
 
-		router.get( '/:user/vip',
+		router.get( '/:user(\\d+|me)/prestige',
 			hub,
 			( req, res, next ) => {
 				return new MembersEndpoint( req.hub, req.user )
-				.vip( req.params.user, req.query )
+				.get( req.params.user, req.query, 'prestige' )
+				.then( results => res.json( results ) )
+				.catch( err => next( err ) );
+			}
+		);
+
+		router.get( '/:user(\\d+|me)/vip',
+			hub,
+			( req, res, next ) => {
+				return new MembersEndpoint( req.hub, req.user )
+				.get( req.params.user, req.query, 'vip' )
 				.then( results => res.json( results ) )
 				.catch( err => next( err ) );
 			}

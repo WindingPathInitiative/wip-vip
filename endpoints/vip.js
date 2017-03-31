@@ -26,8 +26,7 @@ class VIPEndpoint extends AwardsEndpoint {
 	 * @return {AwardModel}
 	 */
 	query( map ) {
-		return new AwardModel( map )
-		.where( 'vip', '<>', 0 );
+		return new AwardModel( map ).whereVip();
 	}
 
 

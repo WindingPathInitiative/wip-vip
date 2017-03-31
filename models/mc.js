@@ -48,6 +48,19 @@ class MembershipClassModel extends Bookshelf.Model {
 			return this.save();
 		});
 	}
+
+	static getUserLevel( user ) {
+		return new MembershipClassModel()
+		.where({ user: user, status: 'Approved' })
+		.orderBy( 'level', 'DESC' )
+		.fetch()
+		.then( review => {
+			if ( null === review ) {
+				return 1;
+			}
+			return review.get( 'level' );
+		});
+	}
 }
 
 module.exports = Bookshelf.model( 'MembershipClass', MembershipClassModel );
