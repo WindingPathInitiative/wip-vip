@@ -537,7 +537,7 @@ class AwardsEndpoint {
 			}
 		);
 
-		router.get( '/:id(\\d+)',
+		router.get( '/:id',
 			hub,
 			( req, res, next ) => {
 				return new AwardsEndpoint( req.hub, req.user )
