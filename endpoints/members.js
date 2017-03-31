@@ -6,8 +6,6 @@ const Promise = require( 'bluebird' );
 const AwardModel           = require( '../models/award' );
 const MembershipClassModel = require( '../models/mc' );
 
-const NotFoundError = require( '../helpers/errors' ).NotFoundError;
-
 class MembersEndpoint {
 	/**
 	 * Constructor.

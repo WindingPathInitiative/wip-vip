@@ -79,38 +79,6 @@ class AwardsEndpoint {
 
 
 	/**
-	 * Gets awards for a given member.
-	 * @param {String|Number} user    The user ID.
-	 * @param {Object}        filters Filter object.
-	 * @return {Promise}
-	 */
-	getMember( user, filters ) {
-		// Sets the default filter data.
-		if ( ! _.has( filters, 'status' ) ) {
-			filters.status = 'Awarded';
-		}
-		filters.user = user;
-
-		// Check for public or personal information, otherwise do a role check.
-		let promise;
-		if (
-			'Awarded' === filters.status ||
-			'me' === user ||
-			Number.parseInt( user ) === this.userId
-		) {
-			promise = Promise.resolve( true );
-		} else {
-			promise = this.Hub.hasOverUser( user, this.role( 'view' ) );
-		}
-
-		// Get the data.
-		return promise
-		.then( () => this.filterAwards( filters ) )
-		.then( awards => awards.toJSON() );
-	}
-
-
-	/**
 	 * Creates an award.
 	 * @param {Object} data Data to create from.
 	 * @return {Promise}
@@ -543,16 +511,6 @@ class AwardsEndpoint {
 				return new AwardsEndpoint( req.hub, req.user )
 				.getOne( req.params.id )
 				.then( award => res.json( award ) )
-				.catch( err => next( err ) );
-			}
-		);
-
-		router.get( '/member/:user',
-			hub,
-			( req, res, next ) => {
-				return new AwardsEndpoint( req.hub, req.user )
-				.getMember( req.params.user, req.query )
-				.then( awards => res.json({ results: awards }) )
 				.catch( err => next( err ) );
 			}
 		);
