@@ -1,3 +1,5 @@
+'use strict';
+
 /* eslint-env node, mocha */
 
 const should = require( 'should' ); // eslint-disable-line no-unused-vars
