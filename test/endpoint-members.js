@@ -7,9 +7,136 @@ const hub = helpers.hub;
 
 const MembersEndpoint = require( '../endpoints/members' );
 
+const MembershipClassModel = require( '../models/mc' );
+const AwardModel           = require( '../models/award' );
+
 const errors = require( '../helpers/errors' );
 
 module.exports = function() {
+
+	describe( 'GET /v1/members/{user}', function() {
+
+		beforeEach( 'reset data', helpers.resetDB );
+
+		it( 'returns correct membership class', function( done ) {
+			new MembersEndpoint( null, 1 )
+			.info( 1 )
+			.then( data => {
+				data.should.have.property( 'membershipClass', 14 );
+				done();
+			});
+		});
+
+		it( 'updates when new membership class approved', function( done ) {
+			new MembersEndpoint( null, 1 )
+			.info( 2 )
+			.then( data => {
+				data.should.have.property( 'membershipClass', 1 );
+				return new MembershipClassModel({ id: 2 }).fetch()
+			})
+			.then( mc => mc.save({ status: 'Approved' }) )
+			.then( () => new MembersEndpoint( null, 1 ).info( 2 ) )
+			.then( data => {
+				data.should.have.property( 'membershipClass', 2 );
+				done();
+			});
+		});
+
+		it( 'returns correct prestige', function( done ) {
+			new MembersEndpoint( null, 1 )
+			.info( 1 )
+			.then( data => {
+				data.should.have.property( 'prestige' );
+				data.prestige.should.have.properties({
+					general: 80,
+					regional: 0,
+					national: 0,
+					total: 80
+				});
+				done();
+			});
+		});
+
+		it( 'updates when new award is approved', function( done ) {
+			new AwardModel({ id: 3 }).fetch()
+			.then( award => award.save({ status: 'Awarded' }) )
+			.then( () => new MembersEndpoint( null, 1 ).info( 1 ) )
+			.then( data => {
+				data.prestige.general.should.equal( 80 + 50 );
+				data.prestige.total.should.equal( 80 + 50 );
+				done();
+			});
+		});
+
+		it( 'returns correct VIP', function( done ) {
+			new MembersEndpoint( null, 1 )
+			.info( 1 )
+			.then( data => {
+				data.should.have.property( 'vip' );
+				data.vip.should.have.properties({
+					gained: 2,
+					spent: 0,
+					total: 2
+				});
+				done();
+			});
+		});
+
+		it( 'updates when new VIP is approved', function( done ) {
+			new AwardModel({ id: 7 }).fetch()
+			.then( award => award.save({ status: 'Awarded' }) )
+			.then( () => new MembersEndpoint( null, 1 ).info( 1 ) )
+			.then( data => {
+				data.vip.gained.should.equal( 2 + 2 );
+				data.vip.total.should.equal( 2 + 2 );
+				done();
+			});
+		});
+
+		it( 'updates when VIP is spent', function( done ) {
+			new AwardModel({ id: 7 }).fetch()
+			.then( award => award.save({ status: 'Awarded', usableVip: -2 }) )
+			.then( () => new MembersEndpoint( null, 1 ).info( 1 ) )
+			.then( data => {
+				data.vip.gained.should.equal( 2 );
+				data.vip.spent.should.equal( 2 );
+				data.vip.total.should.equal( 0 );
+				done();
+			});
+		});
+
+		it( 'returns self on me', function( done ) {
+			new MembersEndpoint( null, 1 )
+			.info( 'me' )
+			.then( data => {
+				data.should.have.property( 'membershipClass', 14 );
+				done();
+			});
+		});
+
+		it( 'returns defaults when user does not exist', function( done ) {
+			new MembersEndpoint( null, 1 )
+			.info( 100 )
+			.then( data => {
+				data.should.eql({
+					prestige: {
+						general: 0,
+						regional: 0,
+						national: 0,
+						total: 0
+					},
+					vip: {
+						gained: 0,
+						spent: 0,
+						total: 0
+					},
+					membershipClass: 1
+				});
+				done();
+			});
+		});
+	});
+
 	describe( 'GET /v1/members/{user}/prestige', function() {
 
 		it( 'returns all awards with user me', function( done ) {

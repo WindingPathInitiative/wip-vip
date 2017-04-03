@@ -7,6 +7,7 @@ const AwardModel           = require( '../models/award' );
 const MembershipClassModel = require( '../models/mc' );
 
 class MembersEndpoint {
+
 	/**
 	 * Constructor.
 	 * @param {Object} hub  The Hub interface.

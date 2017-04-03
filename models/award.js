@@ -71,7 +71,7 @@ class AwardModel extends Bookshelf.Model {
 					if ( val.usableVip > 0 ) {
 						acc.gained += val.usableVip;
 					} else {
-						acc.spent += val.usableVip;
+						acc.spent += Math.abs( val.usableVip );
 					}
 					acc.total += val.usableVip;
 					return acc;
