@@ -30,10 +30,22 @@ class AwardModel extends Bookshelf.Model {
 		return this.belongsTo( CategoryModel, 'categoryId' );
 	}
 
+	whereVip() {
+		return this.where( 'usableVip', '<>', 0 );
+	}
+
+	wherePrestige() {
+		return this.where( 'usableVip', 0 );
+	}
+
 	static getUserTotals( user ) {
-		return new AwardModel().where({ user: user, status: 'Awarded' })
+		return new AwardModel().where({ user: user, status: 'Awarded' }).wherePrestige()
 		.fetchAll()
 		.then( awards => {
+			let start = { general: 0, regional: 0, national: 0, total: 0 };
+			if ( null === awards ) {
+				return start;
+			}
 			return awards.toJSON().reduce(
 				( acc, val ) => {
 					acc.general += val.usableGeneral;
@@ -41,8 +53,29 @@ class AwardModel extends Bookshelf.Model {
 					acc.national += val.usableNational;
 					acc.total += ( val.usableGeneral + val.usableRegional + val.usableNational );
 					return acc;
-				},
-				{ general: 0, regional: 0, national: 0, total: 0 }
+				}, start
+			);
+		});
+	}
+
+	static getUserVip( user ) {
+		return new AwardModel().where({ user: user, status: 'Awarded' }).whereVip()
+		.fetchAll()
+		.then( awards => {
+			let start = { gained: 0, spent: 0, total: 0 };
+			if ( null === awards ) {
+				return start;
+			}
+			return awards.toJSON().reduce(
+				( acc, val ) => {
+					if ( val.usableVip > 0 ) {
+						acc.gained += val.usableVip;
+					} else {
+						acc.spent += Math.abs( val.usableVip );
+					}
+					acc.total += val.usableVip;
+					return acc;
+				}, start
 			);
 		});
 	}

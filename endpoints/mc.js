@@ -146,7 +146,8 @@ class MembershipClassEndpoint {
 			office: 0
 		}).save() )
 		.tap( cls => new AwardModel()
-			.where({ user: userId, mcReviewId: null, status: 'Awarded', vip: null })
+			.where({ user: userId, mcReviewId: null, status: 'Awarded' })
+			.wherePrestige()
 			.fetchAll()
 			.then( awards => awards.invokeThen( 'save', 'mcReviewId', cls.id ) )
 		)

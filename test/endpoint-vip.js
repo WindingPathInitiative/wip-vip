@@ -580,7 +580,8 @@ module.exports = function() {
 				date: new Date( '2017-02-20' ),
 				status: 'Nominated',
 				nominate: 2,
-				vip: 1
+				vip: 1,
+				usableVip: 1
 			}).save( {}, { method: 'insert' } )
 			.then( () => {
 				new VIPEndpoint( hub( 200, [{ id: 2 }] ), 3 ).delete( 10 )
@@ -599,7 +600,8 @@ module.exports = function() {
 				date: new Date( '2017-02-20' ),
 				status: 'Awarded',
 				awarder: 2,
-				vip: 1
+				vip: 1,
+				usableVip: 1
 			}).save( {}, { method: 'insert' } )
 			.then( () => {
 				new VIPEndpoint( hub( 200, [{ id: 2 }] ), 3 ).delete( 10 )
