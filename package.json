@@ -1,7 +1,7 @@
 {
-  "name": "mes-prestige",
+  "name": "wpi-vip",
   "version": "1.0.0",
-  "description": "System to handle prestige for Mind's Eye Society",
+  "description": "System to handle VIP Awards for Winding Path Initiative",
   "main": "server.js",
   "scripts": {
     "lint": "eslint .",
@@ -11,14 +11,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/MindsEyeSociety/prestige.git"
+    "url": "git+https://github.com/WindingPathInitiative/vip.git"
   },
-  "author": "Ephraim Gregor",
+  "author": "Joe Terranova",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/MindsEyeSociety/prestige/issues"
+    "url": "https://github.com/WindingPathInitiative/vip/issues"
   },
-  "homepage": "https://github.com/MindsEyeSociety/prestige#readme",
+  "homepage": "https://github.com/WindingPathInitiative/vip#readme",
   "dependencies": {
     "bluebird": "^3.4.7",
     "bookshelf": "^0.10.3",

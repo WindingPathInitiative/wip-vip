@@ -8,16 +8,16 @@ app.use( bodyParser.urlencoded({ extended: false }) );
 app.use( require( 'express-partial-response' )() );
 app.use( require( 'morgan' )( 'dev' ) );
 
-app.use( '/v1/awards/', require( './endpoints/awards' ).route() );
+//app.use( '/v1/awards/', require( './endpoints/awards' ).route() );
 app.use( '/v1/vip/', require( './endpoints/vip' ).route() );
 app.use( '/v1/categories/', require( './endpoints/categories' ).route() );
-app.use( '/v1/mc/', require( './endpoints/mc' ).route() );
+//app.use( '/v1/mc/', require( './endpoints/mc' ).route() );
 app.use( '/v1/members/', require( './endpoints/members' ).route() );
 
 app.get( '/', ( req, res ) => {
 	let version = require( './package.json' ).version;
 	res.json({
-		message: 'Welcome to the prestige system!',
+		message: 'Welcome to the vip system!',
 		version
 	});
 });
